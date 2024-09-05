@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>documentation</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="documentation_files/libs/clipboard/clipboard.min.js"></script>
+<script src="documentation_files/libs/quarto-html/quarto.js"></script>
+<script src="documentation_files/libs/quarto-html/popper.min.js"></script>
+<script src="documentation_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="documentation_files/libs/quarto-html/anchor.min.js"></script>
+<link href="documentation_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="documentation_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="documentation_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="documentation_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="documentation_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+
+<section id="sanopps-methodology" class="level1">
+<h1>SanOpps Methodology</h1>
+<p>This guide serves to provide greater detail about each variable and calculation included in the SanOpps platform.</p>
+<section id="glossary" class="level2">
+<h2 class="anchored" data-anchor-id="glossary">Glossary</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 3%">
+<col style="width: 33%">
+<col style="width: 36%">
+<col style="width: 26%">
+</colgroup>
+<tbody>
+<tr class="odd">
+<td><strong>Variable Type</strong></td>
+<td><strong>Variable Name</strong></td>
+<td><strong>Description</strong></td>
+<td><strong>Definition</strong></td>
+</tr>
+<tr class="even">
+<td><strong>Projected Demographics 2030</strong></td>
+<td>Population</td>
+<td>Projected Population – 2030</td>
+<td>the estimated number of people expected to inhabit a specific city by the year 2030</td>
+</tr>
+<tr class="odd">
+<td>Number of Households</td>
+<td>Projected no. of households - 2030</td>
+<td>the estimated total number of households expected in a specific city by the year 2030</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><strong>Demographic<br>
+Variables</strong></td>
+<td>Population</td>
+<td>Total Male</td>
+<td>the entire count of male individuals in a city in the current year</td>
+</tr>
+<tr class="odd">
+<td>Total Female</td>
+<td>the entire count of female individuals in a city in the current year</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Total Urban Population</td>
+<td>the total count of people living in urban areas within a city</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Total Slum Population</td>
+<td>the overall number of people residing in the most vulnerable and underserved urban areas, known as slums, within a city</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Floating Population</td>
+<td>Urban &amp; Slums</td>
+<td>a transient group of people who frequently move between different geographic locations without a permanent residence. This population often includes individuals such as seasonal workers, migrants, or those temporarily living in an area for employment, education, or other reasons.</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Percentage of Tourist Footfall</td>
+<td>the proportion of tourists who visit a particular location, attraction, or region compared to the total number of visitors or the potential visitor base.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Households</td>
+<td>Total Number of Households in Urban</td>
+<td>the total count of households in urban areas within a specific city at a given point in time.</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Total Number of Households in Slums</td>
+<td>the total count of households in urban slum areas with inadequate living conditions and the disparities in access to WASH facilities within a city at a given point in time.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td><strong>Sanitation Coverage Variables</strong></td>
+<td>Access to Toilets</td>
+<td>Total Number of Households with toilet</td>
+<td>the total count of households that have access to a functioning toilet facility within their dwelling or premises. This metric includes households with private toilets, shared toilets in residential buildings, or community toilets that meet basic standards of accessibility, hygiene, and safety.</td>
+</tr>
+<tr class="odd">
+<td>Total Number of Public Toilet</td>
+<td>the total count of toilet facilities that are publicly accessible and intended for use by the general population in a city. These toilets are typically located in public spaces, such as parks, markets, bus stations, and other high-traffic areas</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Total Number of Community Toilet</td>
+<td>the total count of toilet facilities that are shared among multiple households within a community, often located in densely populated areas like slums or informal settlements. These toilets are typically maintained by the community or local authorities and are intended to provide sanitation access to residents who do not have private toilets within their homes.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Human Excreta Management</td>
+<td>Percentage of population connected to sewer system</td>
+<td>the proportion of the total population in a city that has access to and uses a centralized sewer system for wastewater disposal.</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Treatment Capacity of STP</td>
+<td>the maximum volume of sewage or wastewater that a sewage treatment plant (STP) can effectively treat within a specific period, expressed in cubic meters per day (m³/day).</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>No of STP</td>
+<td>the total count of sewage treatment facilities operating within a specific city.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>No.&nbsp;of FSTP</td>
+<td>the total count of facilities within a city that are specifically designed to treat faecal sludge, which is the semi-solid waste collected from onsite sanitation systems such as septic tanks and pit latrines. These treatment plants process fecal sludge to reduce its volume, treat pathogens, and convert it into a safer form for disposal or reuse.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Capacity of FSTP</td>
+<td>the maximum volume of fecal sludge that a treatment plant can process within a specific time frame, typically measured in cubic meters per day (m³/day).</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Tourism data</td>
+<td>Water and sanitation facilities during tourist feast/yaatra/waari</td>
+<td>This component focuses on the assessment of temporary and permanent water and sanitation facilities provided during major tourist events such as feasts, yatras (pilgrimages), and waari (annual processions). These events often draw large crowds, leading to a surge in demand for adequate water supply and sanitation services.</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Open Defecation</td>
+<td>Percentage of Households Having Access to Any Type of Toilet Facility (e.g., IHHT, CT/PT)</td>
+<td>the proportion of households within a city that have access to any form of toilet facility.</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><strong>Water Supply</strong></td>
+<td>Distribution of drinking water facilities</td>
+<td>Percentage of households having tap water supply</td>
+<td>the proportion of households within a city that have piped water supply</td>
+</tr>
+<tr class="odd">
+<td><strong>School Sanitation</strong></td>
+<td>No.&nbsp;Of school</td>
+<td>Number of school-going children - Boys</td>
+<td>the total number of male and female students who are enrolled in and attending school within a specific age range and educational level in a given city. This metric includes boys attending primary, secondary, or other educational institutions.</td>
+</tr>
+<tr class="even">
+<td>No.&nbsp;of school-going children - Girls</td>
+<td>the total number of male and female students who are enrolled in and attending school within a specific age range and educational level in a given city. This metric includes girls attending primary, secondary, or other educational institutions.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Total no. of school-going children</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>School Sanitation coverage</td>
+<td>School statistics along sanitation arrangements</td>
+<td>the total number of educational institutions that provide separate toilet facilities for male and female students. Gender-specific toilets are designed to ensure privacy and hygiene for students of different genders, typically including distinct facilities for boys and girls within the school premises.</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td><strong>Health Variables</strong></td>
+<td>Incidence of Waterborne/Vector Diseases</td>
+<td>Number of cases of Water Borne diseases</td>
+<td>he total number of reported cases of diseases caused by pathogens transmitted through contaminated water sources within a specific area or time period. These diseases include conditions such as cholera, dysentery, typhoid fever, and hepatitis A.</td>
+</tr>
+<tr class="even">
+<td>Number of cases of Vector Borne diseases</td>
+<td>the total number of reported cases of diseases transmitted by vectors such as mosquitoes, flies, or ticks, which are associated with environmental conditions influenced by sanitation and waste management practices. Examples include malaria, dengue fever, and leishmaniasis.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Birth &amp; Death rate</td>
+<td>Total no. of births</td>
+<td>the total number of live births that occur within a city over the year. This statistic provides a measure of the population growth and demographic changes within the city.</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Total no. of deaths</td>
+<td>the total number of deaths occurring within a city over the year. This number provides a measure of mortality and helps to understand the overall health burden within the city.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Type of diseases</td>
+<td>No.&nbsp;of diarrheal cases per year</td>
+<td>Diarrheal diseases are typically caused by pathogens such as bacteria, viruses, or parasites, which are often spread through contaminated water, poor sanitation, and inadequate hygiene practices.</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><strong>Economic Variables</strong></td>
+<td>Population Income</td>
+<td>Average income of households (INR Lakh/Year)</td>
+<td>This figure represents the average amount of money earned by all members of a household from various sources such as wages, business profits, investments, and other earnings over a year.</td>
+</tr>
+<tr class="odd">
+<td>GDP</td>
+<td>Revenue Generation from (Water Tax, sewerage tax, CT/PT usage)</td>
+<td>the total income collected by a city or municipal authority from various fees and taxes related to water and sanitation services.</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><strong>Urban-Specific<br>
+Variables</strong></td>
+<td>Sewage System Coverage</td>
+<td>Number of households connected to the sewage system.</td>
+<td>the total number of households within a city that are connected to a centralized sewage system. This system includes a network of pipes, pumps, and treatment facilities designed to collect and treat wastewater from homes before it is discharged into the water body or reused.</td>
+</tr>
+<tr class="odd">
+<td>Onsite Sanitation System</td>
+<td>Number of households having septic tanks/soak pit</td>
+<td>the total number of households in a city that use onsite sanitation systems, such as septic tanks or soak pits, to manage their wastewater.<br>
+Septic tanks are underground structures that treat wastewater through biological decomposition and drainage,<br>
+while soak pits are excavated pits filled with porous materials, allowing treated wastewater to seep into the ground.</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><strong>Cost Metric</strong></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td><strong>Piped Water Supply Costs</strong></td>
+<td>Functional Household Tap Connection (FHTC) cost</td>
+<td>FHTC cost (Per household) INR</td>
+<td>the cost associated with providing a FHTC for piped water supply to individual households. The cost includes expenses related to the installation of the tap, the necessary piping and infrastructure, and any additional components required to ensure a reliable and continuous water supply.</td>
+</tr>
+<tr class="even">
+<td><strong>Capital Costs</strong></td>
+<td>Construction Costs (Costs for building new sanitation infrastructure.)</td>
+<td>CT/PT (Per Water Closet) INR Lakhs</td>
+<td>the construction costs per water closet (toilet seat) in community toilets (CT) and public toilets (PT). It includes expenses related to materials, labor, and other resources necessary for the construction of sanitation facilities that serve multiple users, typically in urban areas.</td>
+</tr>
+<tr class="odd">
+<td>Sewerage Connections (INR lakh per KM)</td>
+<td>the construction costs associated with laying sewerage networks, specifically the cost per kilometer of sewer line laid. It includes the costs for excavation, piping, labor, and installation necessary to connect households and establishments to a central sewer system.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>STP (Per MLD of wastewater) in INR Crore</td>
+<td>It covers the cost of building the physical structures, installing machinery and technology required for treating sewage to acceptable environmental standards.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>FSTP (Per KLD of Sludge) in INR Lakh</td>
+<td>the construction costs of fecal sludge treatment plants (FSTPs), which treat sludge collected from onsite sanitation systems like septic tanks. The costs are calculated per kiloliter per day (KLD) of sludge treated and include the expenses for building the facility, equipment installation, and infrastructure needed to process the sludge.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td><strong>Operational Costs</strong></td>
+<td>Maintenance Costs (Ongoing expenses for maintaining sanitation systems.)</td>
+<td>CT/PT (Per Water Closet cost) INR</td>
+<td>This cost refers to the ongoing expenses associated with maintaining community and public toilets. It includes routine cleaning, repair, and replacement of fixtures and fittings, and other general upkeep activities necessary to ensure the toilets remain hygienic and operational. The cost is calculated per water closet, providing a per-unit measure of maintenance expenses.</td>
+</tr>
+<tr class="odd">
+<td>Sewerage Connections (INR thousand per KM)</td>
+<td>This component represents the costs involved in maintaining sewerage connections per kilometer. Maintenance activities include regular inspection, repair of pipelines, unclogging, and cleaning to prevent blockages and ensure the efficient flow of wastewater through the sewer network.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>STP (Per annum/MLD of wastewater) in INR Lakhs</td>
+<td>These are the annual costs required for the upkeep of sewage treatment plants. Maintenance includes operations such as regular servicing of equipment, chemical procurement, energy consumption, sludge management, and labor costs. These expenses are calculated per million liters per day (MLD) of wastewater treated, providing a measure of operational costs relative to the treatment capacity of the plant.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>FSTP (Per annum/ KLD of wastewater) in INR Lakh</td>
+<td>This refers to the yearly costs for maintaining faecal sludge treatment plants. Maintenance activities cover the upkeep of machinery, equipment servicing, energy usage, and other operational requirements.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td><p>FSTP Desludging cost</p>
+<p>Desludging truck cost (per household) in INR</p></td>
+<td>This variable captures the cost associated with the desludging process, which involves the removal of accumulated sludge from onsite sanitation systems, such as septic tanks. The cost is measured per household, covering expenses related to the operation of desludging trucks, including fuel, labor, and disposal fees.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td><strong>Training and Outreach Costs</strong></td>
+<td>Capacity Building of ULBs</td>
+<td><p>Costs for educating officials about sanitation</p>
+<p>practices (Thousand INR/Person)</p></td>
+<td>This cost involves training programs designed to educate officials from Urban Local Bodies (ULBs) on best practices in sanitation management. These training sessions may cover topics such as effective sanitation infrastructure management, the implementation of sanitation policies, and strategies for improving service delivery.</td>
+</tr>
+<tr class="even">
+<td>Public Awareness Campaigns (IEC/BCC)</td>
+<td>Expenses for promoting sanitation and hygiene (INR per person annually)</td>
+<td>Information, Education, and Communication (IEC) and Behavior Change Communication (BCC) campaigns aim to raise public awareness about the importance of sanitation and hygiene. These campaigns may include activities like community meetings, distribution of educational materials, mass media campaigns, and school programs. The costs are calculated annually per person, reflecting the expenditure required to reach and educate each individual within the community about proper sanitation and hygiene practices.</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td><strong>Benefit Metric</strong></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td><strong>Health Benefits</strong></td>
+<td>Unit cost per treatment (Diarrhea)</td>
+<td>Savings in healthcare expenses due to improved sanitation.</td>
+<td>This refers to the reduction in healthcare costs as a result of decreased cases of diarrhea, which is often linked to poor sanitation. Improved sanitation reduces the occurrence of diarrheal diseases, leading to fewer treatments and thus lowering the unit cost per treatment.</td>
+</tr>
+<tr class="odd">
+<td>Reduced mortality from diarrheal diseases</td>
+<td>Decrease in mortality due to diseases caused by poor sanitation</td>
+<td>This component measures the reduction in deaths caused by diarrheal diseases, which are often attributed to inadequate sanitation. By improving sanitation infrastructure and hygiene practices, the incidence of these diseases declines, resulting in fewer fatalities.</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Reduced morbidity from diarrheal diseases</td>
+<td>Decrease in the incidence of diseases caused by improved sanitation</td>
+<td>This refers to the reduction in the number of illness cases, particularly those related to diarrheal diseases, due to improved sanitation facilities and practices. The decrease in disease incidence leads to fewer days lost to illness, enhancing the overall health and well-being of the population.</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Visits or days per case</td>
+<td>Increased productivity due to improved sanitation</td>
+<td>This component assesses the impact of reduced illness on productivity. Fewer cases of illness, especially those causing diarrhea, result in fewer medical visits and fewer days lost to sickness. This reduction translates into increased productivity, as individuals are healthier and able to engage more fully in economic and social activities.</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Hospital commuting costs</td>
+<td>Savings in transport expenses due to improved sanitation.</td>
+<td>This measures the savings in transportation costs that occur when fewer individuals need to travel to healthcare facilities due to a decrease in illness caused by poor sanitation. With improved sanitation reducing the incidence of diseases such as diarrhea, the need for hospital visits declines, resulting in lower commuting costs</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td><strong>Economic Benefits</strong></td>
+<td>Days off work/school</td>
+<td>Gains in productivity due to fewer sick days.</td>
+<td>This refers to the economic benefit derived from a reduction in the number of days people miss work or school due to illness caused by poor sanitation. Improved sanitation reduces the incidence of waterborne diseases and other health issues, leading to fewer sick days and higher attendance at work and school</td>
+</tr>
+<tr class="even">
+<td>Opportunity cost of time for working adults</td>
+<td>Time and money saved as a result of improved sanitation</td>
+<td>This component measures the value of time saved by working adults due to improved sanitation. When sanitation is poor, people often spend a significant amount of time dealing with health issues, accessing clean water, or traveling to distant facilities. Improved sanitation reduces these time burdens, allowing adults to allocate more time to productive activities, thus enhancing economic output.</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Opportunity cost of time for school going children</td>
+<td>This measures the economic impact of time saved for school-going children due to better sanitation facilities. Improved sanitation in schools and communities reduces the time children spend absent due to illness, fetching water, or lacking adequate sanitation facilities.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Economy due to tourism</td>
+<td>Increase in GDP due to tourism as a result of improved sanitation</td>
+<td>This refers to the economic gains resulting from increased tourism, which is often influenced by the quality of sanitation in a city or region. Improved sanitation infrastructure enhances the appeal of a location to tourists, leading to higher tourist arrivals and spending.</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Revenue generation</td>
+<td>Reuse of treated wastewater (INR /m3)</td>
+<td>This component captures the economic benefits associated with the reuse of treated wastewater. Properly treated wastewater can be reused for various purposes, such as irrigation, industrial processes, or even non-potable urban uses. The reuse of treated wastewater reduces the demand for freshwater resources, lowers costs for water extraction and treatment, and provides an additional revenue stream.</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><strong>Value of loss-of-life avoided</strong></td>
+<td>Discounted productive years lost (0 – 4 years)</td>
+<td>Years lost as a result of lack of proper sanitation for different age groups</td>
+<td>This component measures the economic value of productive years lost due to the death of children aged 0 to 4 years, caused by diseases related to poor sanitation. Improved sanitation reduces mortality rates in this age group, preserving future productive years that would have been lost.</td>
+</tr>
+<tr class="odd">
+<td>Discounted productive years lost (5 – 14 years)</td>
+<td>This component calculates the economic value of productive years lost due to the death of children aged 5 to 14 years from sanitation-related diseases. Like the younger age group, improvements in sanitation can prevent deaths in this demographic, preserving additional years of productivity that these children would have contributed to the economy as they grow older.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Discounted productive years lost (15+ years)</td>
+<td>This measures the economic value of productive years lost due to the death of individuals aged 15 years and older from diseases related to poor sanitation. Improved sanitation can significantly reduce mortality in this age group by preventing deaths from waterborne diseases, infections, and other health issues.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Opportunity cost per year of life lost</td>
+<td>This component represents the economic value associated with each year of life lost due to poor sanitation. The opportunity cost per year of life lost is the potential economic contribution that an individual would have made if they had not died prematurely from sanitation-related diseases. It encompasses not only lost earnings but also the broader economic impacts, such as lost consumption, savings, and investments that would have been made by the individual.</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

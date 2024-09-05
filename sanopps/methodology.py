@@ -6,6 +6,7 @@ app = marimo.App()
 
 @app.cell
 def __():
+    # import necessary libraries
     import pandas as pd
     import matplotlib.pyplot as plt
     import marimo as mo
@@ -14,6 +15,7 @@ def __():
 
 
 @app.cell
+# create sidebar of links to source code and resources
 def __(mo):
     mo.sidebar(
         [
@@ -22,10 +24,10 @@ def __(mo):
                 {
                     "#/home": f"{mo.icon('lucide:home')} Home",
                     "#/about": f"{mo.icon('lucide:user')} World Toilet Organization",
-                    "#/contact": f"{mo.icon('lucide:phone')} Documentation",
+                    "https://www.worldtoilet.org/": "World Toilet Organization",
                     "Documentation": {
-                        "https://twitter.com/marimo_io": "Twitter",
-                        "https://github.com/dalyw/SanOpps": "GitHub",
+                        "https://dalyw.github.io/SanOpps/": "Glossary",
+                        "https://github.com/dalyw/SanOpps": "Source Code",
                     },
                 },
                 orientation="vertical",
@@ -36,13 +38,13 @@ def __(mo):
 
 
 @app.cell
+# define user-input number values
 def __(mo):
-    # Initialize all mo.ui.numbers first
-    current_total_households = mo.ui.number(start=1, stop=1000000, step=1, value=506353, label="Current Total Households")
-    projected_total_households = mo.ui.number(start=1, stop=1000000, step=1, value=848750, label="Projected Total Households")
+    current_households = mo.ui.number(start=1, stop=1000000, step=1, value=506353, label="Current Total Households")
+    projected_households = mo.ui.number(start=1, stop=1000000, step=1, value=848750, label="Projected Total Households")
 
-    current_fraction_households_with_toilet_access = mo.ui.number(start=0.0, stop=1.0, step=0.01, value=1.0, label="Current Fraction Households with Toilet Access")
-    projected_fraction_households_with_toilet_access = mo.ui.number(start=0.0, stop=1.0, step=0.01, value=1.0, label="Projected Fraction Households with Toilet Access")
+    current_fraction_household_toilet_access = mo.ui.number(start=0.0, stop=1.0, step=0.01, value=1.0, label="Current Fraction Households with Toilet Access")
+    projected_fraction_household_toilet_access = mo.ui.number(start=0.0, stop=1.0, step=0.01, value=1.0, label="Projected Fraction Households with Toilet Access")
 
     current_population = mo.ui.number(start=1, stop=10000000, step=1, value=2405665, label="Current Population")
     projected_population = mo.ui.number(start=1, stop=10000000, step=1, value=4074000, label="Projected Population")
@@ -50,24 +52,21 @@ def __(mo):
     stp_count = mo.ui.number(start=1, stop=100, step=1, value=4, label="STP Count")
     stp_capacity_mld = mo.ui.number(start=1, stop=1000, step=1, value=340, label="STP Capacity (mld)")
 
-    total_solid_waste_per_day_tpd = mo.ui.number(start=0, stop=5000, step=0.1, value=1316.023, label="Total Solid Waste per Day (tpd)")
-    swm_tpd_per_person = mo.ui.number(start=0.0, stop=1.0, step=0.0001, value=0.0005, label="SWM per Person (tpd)")
-    additional_sw_2030_tpd = mo.ui.number(start=0.0, stop=1000.0, step=0.1, value=834.1675, label="Additional SWM 2030 (tpd)")
-    addition_total_sw_2030_tpy = mo.ui.number(start=0.0, stop=1000000.0, step=1.0, value=333122.8744, label="Additional SWM 2030 (tpy)")
+    solid_waste_per_person_per_day = mo.ui.number(start=0.0, stop=1.0, step=0.0001, value=0.0005, label="Solid Waste per Person per Day (tpd)")
 
-    current_total_number_public_toilets = mo.ui.number(start=1, stop=1000, step=1, value=88, label="Current Total Number of Public Toilets")
-    current_total_number_community_toilets = mo.ui.number(start=1, stop=1000, step=1, value=60, label="Current Total Number of Community Toilets")
+    current_public_toilets = mo.ui.number(start=1, stop=1000, step=1, value=88, label="Current Total Number of Public Toilets")
+    current_community_toilets = mo.ui.number(start=1, stop=1000, step=1, value=60, label="Current Total Number of Community Toilets")
 
     current_percent_sewerage_connections = mo.ui.number(start=0.0, stop=1.0, step=0.01, value=0.15, label="Current Percent of Sewerage Connections")
 
     # Define dictionaries
     total_households = {
-        'current': current_total_households,
-        'projected': projected_total_households
+        'current': current_households,
+        'projected': projected_households
     }
-    fraction_households_with_toilet_access = {
-        'current': current_fraction_households_with_toilet_access,
-        'projected': projected_fraction_households_with_toilet_access
+    fraction_household_toilet_access = {
+        'current': current_fraction_household_toilet_access,
+        'projected': projected_fraction_household_toilet_access
     }
 
     population = {
@@ -75,11 +74,11 @@ def __(mo):
         'projected': projected_population
     }
 
-    total_number_public_toilets = {
-        'current': current_total_number_public_toilets,
+    public_toilets = {
+        'current': current_public_toilets,
     }
-    total_number_community_toilets = {
-        'current': current_total_number_community_toilets,
+    community_toilets = {
+        'current': current_community_toilets,
     }
 
     percent_sewerage_connections = {
@@ -87,27 +86,24 @@ def __(mo):
         'additional': 1.0
     }
     return (
-        addition_total_sw_2030_tpy,
-        additional_sw_2030_tpd,
-        current_fraction_households_with_toilet_access,
+        current_fraction_household_toilet_access,
         current_percent_sewerage_connections,
         current_population,
-        current_total_households,
-        current_total_number_community_toilets,
-        current_total_number_public_toilets,
-        fraction_households_with_toilet_access,
+        current_households,
+        current_community_toilets,
+        current_public_toilets,
+        fraction_household_toilet_access,
         percent_sewerage_connections,
         population,
-        projected_fraction_households_with_toilet_access,
+        projected_fraction_household_toilet_access,
         projected_population,
-        projected_total_households,
+        projected_households,
         stp_capacity_mld,
         stp_count,
-        swm_tpd_per_person,
+        solid_waste_per_person_per_day,
         total_households,
-        total_number_community_toilets,
-        total_number_public_toilets,
-        total_solid_waste_per_day_tpd,
+        community_toilets,
+        public_toilets,
     )
 
 
@@ -119,31 +115,31 @@ def __(mo):
 
 @app.cell
 def __(
-    current_fraction_households_with_toilet_access,
+    mo,
+    current_fraction_household_toilet_access,
     current_percent_sewerage_connections,
     current_population,
-    current_total_households,
-    current_total_number_community_toilets,
-    current_total_number_public_toilets,
-    mo,
-    projected_fraction_households_with_toilet_access,
+    current_households,
+    current_community_toilets,
+    current_public_toilets,
+    projected_fraction_household_toilet_access,
     projected_population,
-    projected_total_households,
+    projected_households,
 ):
     mo.accordion(
         {
-            "Population": mo.vstack([current_total_households,
-              projected_total_households,
+            "Population": mo.vstack([current_households,
+              projected_households,
               current_population,
               projected_population])
     ,
             "Toilets and Sewerage Connection":
              mo.vstack([
-              current_fraction_households_with_toilet_access,
-              projected_fraction_households_with_toilet_access,
+              current_fraction_household_toilet_access,
+              projected_fraction_household_toilet_access,
               current_percent_sewerage_connections,
-              current_total_number_public_toilets,
-              current_total_number_community_toilets])
+              current_public_toilets,
+              current_community_toilets])
         }
     )
     return
@@ -151,35 +147,35 @@ def __(
 
 @app.cell
 def __(
-    fraction_households_with_toilet_access,
+    fraction_household_toilet_access,
     percent_sewerage_connections,
     population,
     stp_capacity_mld,
     stp_count,
     total_households,
-    total_number_community_toilets,
-    total_number_public_toilets,
+    community_toilets,
+    public_toilets,
 ):
     total_number_households_with_toilet_access = {
-        'current': total_households['current'].value * fraction_households_with_toilet_access['current'].value,
-        'projected': total_households['projected'].value * fraction_households_with_toilet_access['projected'].value,
-        'additional': total_households['projected'].value * fraction_households_with_toilet_access['projected'].value - total_households['current'].value * fraction_households_with_toilet_access['current'].value
+        'current': total_households['current'].value * fraction_household_toilet_access['current'].value,
+        'projected': total_households['projected'].value * fraction_household_toilet_access['projected'].value,
+        'additional': total_households['projected'].value * fraction_household_toilet_access['projected'].value - total_households['current'].value * fraction_household_toilet_access['current'].value
         }
     population['additional'] = population['projected'].value - population['current'].value
 
-    total_number_public_toilets['additional'] = total_number_public_toilets['current'].value *(population['projected'].value / population['current'].value - 1)
-    total_number_community_toilets['additional'] = total_number_community_toilets['current'].value *(population['projected'].value / population['current'].value - 1)
+    public_toilets['additional'] = public_toilets['current'].value *(population['projected'].value / population['current'].value - 1)
+    community_toilets['additional'] = community_toilets['current'].value *(population['projected'].value / population['current'].value - 1)
 
     stp_total_mld = {
         'current': stp_count.value * stp_capacity_mld.value,
         }
 
-    sewerage_connection_length = {
+    sewerage_length = {
         'current': percent_sewerage_connections['current'].value * population['current'].value,
         'additional': percent_sewerage_connections['additional'] * population['additional']
     }
     return (
-        sewerage_connection_length,
+        sewerage_length,
         stp_total_mld,
         total_number_households_with_toilet_access,
     )
@@ -188,13 +184,13 @@ def __(
 @app.cell
 def __(
     pd,
-    sewerage_connection_length,
-    total_number_community_toilets,
+    sewerage_length,
+    community_toilets,
     total_number_households_with_toilet_access,
-    total_number_public_toilets,
+    public_toilets,
 ):
     # Construction and Operational Costs
-    costs = pd.read_csv('capital_costs.csv')
+    costs = pd.read_csv('costs.csv')
 
     costs_dict = {}
     for index, row in costs.iterrows():
@@ -217,15 +213,15 @@ def __(
 
     capital_costs = {
         'household_toilet': costs_dict['Household Toilet']['capital']['average'] * total_number_households_with_toilet_access['additional'],
-        'public_toilet': costs_dict['Public Toilet']['capital']['average'] * total_number_public_toilets['additional'],
-        'community_toilet': costs_dict['Community Toilet']['capital']['average'] * total_number_community_toilets['additional'],
-        'sewer': costs_dict['Sewerage Connections']['capital']['average'] * sewerage_connection_length['additional']
+        'public_toilet': costs_dict['Public Toilet']['capital']['average'] * public_toilets['additional'],
+        'community_toilet': costs_dict['Community Toilet']['capital']['average'] * community_toilets['additional'],
+        'sewer': costs_dict['Sewerage Connections']['capital']['average'] * sewerage_length['additional']
     }
     operational_costs = {
         'household_toilet': costs_dict['Household Toilet']['operational']['average'] * total_number_households_with_toilet_access['additional'],
-        'public_toilet': costs_dict['Public Toilet']['operational']['average'] * total_number_public_toilets['additional'],
-        'community_toilet': costs_dict['Community Toilet']['operational']['average'] * total_number_community_toilets['additional'],
-        'sewer': costs_dict['Sewerage Connections']['operational']['average'] * sewerage_connection_length['additional']
+        'public_toilet': costs_dict['Public Toilet']['operational']['average'] * public_toilets['additional'],
+        'community_toilet': costs_dict['Community Toilet']['operational']['average'] * community_toilets['additional'],
+        'sewer': costs_dict['Sewerage Connections']['operational']['average'] * sewerage_length['additional']
     }
 
     # Calculate total costs
