@@ -57,6 +57,7 @@ def input_data(mo, pd):
                 stop=param_row['stop'],
                 step=param_row['step'],
                 label=param_row['label'],
+                value=param_row['value'],
                 show_value=True
             )
         else:
@@ -77,32 +78,35 @@ def input_data_ui(mo):
 
 
 @app.cell
-def input_data_ui_accordion(mo, objs):
-    # mo.accordion(
-    #     {
-    #         "Population": mo.vstack([objs['total_households']['current'],
-    #                                  objs['total_households']['projected'],
-    #                                  objs['population']['current'],
-    #                                  objs['population']['projected']]),
-    #         "Toilets and Sewerage Connection":
-    #          mo.vstack([
-    #           objs['households_with_toilet_access']['current'],
-    #           objs['households_with_toilet_access']['projected'],
-    #           objs['percent_sewerage']['current'],
-    #           objs['public_toilets']['current'],
-    #           objs['community_toilets']['current']])
-    #     }
-    # )
+def input_data_ui_accordion(mo, objs, params):
+    mandatory_vstack_list = []
+    optional_vstack_list = []
+    input_list = ['Required Inputs:']
 
-    mo.vstack([objs['total_households']['current'], 
-               objs['total_households']['projected'], 
-               objs['population']['current'], objs['population']['projected'],
-               objs['households_with_toilet_access']['current'],
-               objs['households_with_toilet_access']['projected'],
-               objs['percent_sewerage']['current'],
-               objs['public_toilets']['current'],
-               objs['community_toilets']['current']])
-    return
+    for varname2 in ['total_households', 'population', 'households_with_toilet_access', 'percent_sewerage', 'public_toilets', 'community_toilets']:
+        for proj in ['current', 'projected']:
+            if proj not in objs[varname2]:
+                continue
+            elif params.loc[params['varname'] == varname2, 'mandatory'].values[0] == 'yes':
+                mandatory_vstack_list.append(objs[varname2][proj])
+            else:
+                optional_vstack_list.append(objs[varname2][proj])
+
+    for ind in range(len(mandatory_vstack_list)):
+        input_list.append(mandatory_vstack_list[ind])
+    input_list.append(mo.accordion(
+                   {'Optional Inputs': mo.vstack(optional_vstack_list)}))
+
+
+    mo.vstack(input_list)
+    return (
+        ind,
+        input_list,
+        mandatory_vstack_list,
+        optional_vstack_list,
+        proj,
+        varname2,
+    )
 
 
 @app.cell
@@ -123,7 +127,7 @@ def calculate_additional_demand(alt, b, mo, objs, pd):
         'adtl': objs['stp_count']['current'].value * objs['stp_unit_capacity']['current'].value / objs['population']['current'].value * objs['population']['projected'].value
     }
 
-    objs['percent_sewerage']['adtl'] = 1.0
+    objs['percent_sewerage']['adtl'] = objs['percent_sewerage']['projected'].value
 
     objs['sewerage_length'] = {
         'current': objs['percent_sewerage']['current'].value * objs['population']['current'].value,
