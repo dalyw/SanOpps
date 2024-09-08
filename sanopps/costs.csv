@@ -1,10 +1,10 @@
-﻿Cost Item,Capital Cost Unit,Low Unit Cost,Avg Unit Cost,High Unit Cost,Operational Cost Unit,Low Op Cost,Avg Op Cost,High Op Cost
-Household Toilet,INR Rs./toilet,3000.00,7000.00,11000.00,INR Rs./year,400.00,475.00,550.00
-Community Toilet,INR Lakhs/toilet,2.00,6.00,10.00,INR Lakhs/year,3.00,4.00,5.00
-Public Toilet,INR Lakhs/toilet,2.00,6.00,10.00,INR Lakhs/year,3.00,4.00,5.00
-Sewerage Connections,INR lakh/km,50.00,65.00,80.00,INR lakh/km/year,7.50,8.75,10.00
-STP,INR Crore/MLD,1.00,3.75,6.50,INR Crore/MLD/year,2.00,3.00,4.00
-FSTP,INR Lakh/KLD,3.50,4.25,5.00,INR Lakh/KLD/year,0.50,1.25,2.00
-Land Acquisition - STP/CT/PT,INR /sq. feet,0.00,0.00,0.00,INR/sq. feet/year,0.00,0.00,0.00
-Land Acquisition - Pumping Stn.,INR /sq. feet,0.00,0.00,0.00,INR/sq. feet/year,0.00,0.00,0.00
-Land Acquisition - Sewerage Line,INR /sq. feet,0.00,0.00,0.00,INR/sq. feet/year,0.00,0.00,0.00
+﻿Cost Item,varname,Capital Cost Unit,Low Unit Cost,Avg Unit Cost,High Unit Cost,Operational Cost Unit,Low Op Cost,Avg Op Cost,High Op Cost
+Household Toilet,household_toilet_access,INR Rs./toilet,3000.00,7000.00,11000.00,INR Rs./year,400.00,475.00,550.00
+Community Toilet,community_toilets,INR Lakhs/toilet,2.00,6.00,10.00,INR Lakhs/year,3.00,4.00,5.00
+Public Toilet,public_toilets,INR Lakhs/toilet,2.00,6.00,10.00,INR Lakhs/year,3.00,4.00,5.00
+Sewerage Connections,sewerage_length,INR lakh/km,50.00,65.00,80.00,INR lakh/km/year,7.50,8.75,10.00
+STP,stp,INR Crore/MLD,1.00,3.75,6.50,INR Crore/MLD/year,2.00,3.00,4.00
+FSTP,fstp,INR Lakh/KLD,3.50,4.25,5.00,INR Lakh/KLD/year,0.50,1.25,2.00
+Land Acquisition - STP/CT/PT,land_acquisition_stp_ct_pt,INR /sq. feet,0.00,0.00,0.00,INR/sq. feet/year,0.00,0.00,0.00
+Land Acquisition - Pumping Stn.,land_acquisition_pumping_stn,INR /sq. feet,0.00,0.00,0.00,INR/sq. feet/year,0.00,0.00,0.00
+Land Acquisition - Sewerage Line,land_acquisition_sewerage_line,INR /sq. feet,0.00,0.00,0.00,INR/sq. feet/year,0.00,0.00,0.00

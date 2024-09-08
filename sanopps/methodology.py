@@ -5,7 +5,7 @@ app = marimo.App()
 
 
 @app.cell
-def __():
+def import_libraries():
     # import necessary libraries
     import pandas as pd
     import matplotlib.pyplot as plt
@@ -15,19 +15,17 @@ def __():
 
 
 @app.cell
-# create sidebar of links to source code and resources
-def __(mo):
+def sidebar(mo):
     mo.sidebar(
         [
             mo.md("# SanOpps"),
             mo.nav_menu(
                 {
-                    "#/home": f"{mo.icon('lucide:home')} Home",
-                    "#/about": f"{mo.icon('lucide:user')} World Toilet Organization",
-                    "https://www.worldtoilet.org/": "World Toilet Organization",
+                    "#/home": f"{mo.icon('lucide:home')} [Home](https://www.worldtoilet.org/)",
+                    "#/about": f"{mo.icon('lucide:droplet')} [World Toilet Organization](https://www.worldtoilet.org/)",
                     "Documentation": {
-                        "https://dalyw.github.io/SanOpps/": "Glossary",
-                        "https://github.com/dalyw/SanOpps": "Source Code",
+                        "https://dalyw.github.io/SanOpps/documentation.html": f"{mo.icon('lucide:book-open-text')}Glossary",
+                        "https://github.com/dalyw/SanOpps": f"{mo.icon('lucide:code')}Source Code",
                     },
                 },
                 orientation="vertical",
@@ -38,248 +36,202 @@ def __(mo):
 
 
 @app.cell
-# define user-input number values
-def __(mo):
-    current_households = mo.ui.number(start=1, stop=1000000, step=1, value=506353, label="Current Total Households")
-    projected_households = mo.ui.number(start=1, stop=1000000, step=1, value=848750, label="Projected Total Households")
+def input_data(mo, pd):
+    params = pd.read_csv('params.csv')
 
-    current_fraction_household_toilet_access = mo.ui.number(start=0.0, stop=1.0, step=0.01, value=1.0, label="Current Fraction Households with Toilet Access")
-    projected_fraction_household_toilet_access = mo.ui.number(start=0.0, stop=1.0, step=0.01, value=1.0, label="Projected Fraction Households with Toilet Access")
+    number_objects = {}
+    for _, param_row in params.iterrows():
+        number_objects[param_row['varname']] = mo.ui.number(
+            start=param_row['start'],
+            stop=param_row['stop'],
+            step=param_row['step'],
+            value=param_row['value'],
+            label=param_row['label']
+        )
 
-    current_population = mo.ui.number(start=1, stop=10000000, step=1, value=2405665, label="Current Population")
-    projected_population = mo.ui.number(start=1, stop=10000000, step=1, value=4074000, label="Projected Population")
-
-    stp_count = mo.ui.number(start=1, stop=100, step=1, value=4, label="STP Count")
-    stp_capacity_mld = mo.ui.number(start=1, stop=1000, step=1, value=340, label="STP Capacity (mld)")
-
-    solid_waste_per_person_per_day = mo.ui.number(start=0.0, stop=1.0, step=0.0001, value=0.0005, label="Solid Waste per Person per Day (tpd)")
-
-    current_public_toilets = mo.ui.number(start=1, stop=1000, step=1, value=88, label="Current Total Number of Public Toilets")
-    current_community_toilets = mo.ui.number(start=1, stop=1000, step=1, value=60, label="Current Total Number of Community Toilets")
-
-    current_percent_sewerage_connections = mo.ui.number(start=0.0, stop=1.0, step=0.01, value=0.15, label="Current Percent of Sewerage Connections")
-
-    # Define dictionaries
-    total_households = {
-        'current': current_households,
-        'projected': projected_households
+    number_objects['total_households'] = {
+        'current': number_objects["current_total_households"],
+        'projected': number_objects["projected_total_households"]
     }
-    fraction_household_toilet_access = {
-        'current': current_fraction_household_toilet_access,
-        'projected': projected_fraction_household_toilet_access
+    number_objects['household_toilet_access'] = {
+        'current': number_objects["current_households_with_toilet_access"],
+        'projected': number_objects["projected_households_with_toilet_access"]
     }
-
-    population = {
-        'current': current_population,
-        'projected': projected_population
+    number_objects['population'] = {
+        'current': number_objects["current_population"],
+        'projected': number_objects["projected_population"]
     }
-
-    public_toilets = {
-        'current': current_public_toilets,
+    number_objects['public_toilets'] = {
+        'current': number_objects["current_public_toilets"],
     }
-    community_toilets = {
-        'current': current_community_toilets,
+    number_objects['community_toilets'] = {
+        'current': number_objects["current_community_toilets"],
     }
-
-    percent_sewerage_connections = {
-        'current': current_percent_sewerage_connections,
+    number_objects['percent_sewerage_connections'] = {
+        'current': number_objects["current_percent_sewerage"],
         'additional': 1.0
     }
-    return (
-        current_fraction_household_toilet_access,
-        current_percent_sewerage_connections,
-        current_population,
-        current_households,
-        current_community_toilets,
-        current_public_toilets,
-        fraction_household_toilet_access,
-        percent_sewerage_connections,
-        population,
-        projected_fraction_household_toilet_access,
-        projected_population,
-        projected_households,
-        stp_capacity_mld,
-        stp_count,
-        solid_waste_per_person_per_day,
-        total_households,
-        community_toilets,
-        public_toilets,
-    )
+    return number_objects, param_row, params
 
 
 @app.cell
-def __(mo):
+def __(params):
+    print(params['varname'].tolist())
+    return
+
+
+@app.cell
+def input_data_ui(mo):
     mo.md(r"""Input Data""")
     return
 
 
 @app.cell
-def __(
-    mo,
-    current_fraction_household_toilet_access,
-    current_percent_sewerage_connections,
-    current_population,
-    current_households,
-    current_community_toilets,
-    current_public_toilets,
-    projected_fraction_household_toilet_access,
-    projected_population,
-    projected_households,
-):
+def input_data_ui_accordion(mo, number_objects):
     mo.accordion(
         {
-            "Population": mo.vstack([current_households,
-              projected_households,
-              current_population,
-              projected_population])
-    ,
+            "Population": mo.vstack([number_objects['total_households']['current'],
+                                     number_objects['total_households']['projected'],
+                                     number_objects['population']['current'],
+                                     number_objects['population']['projected']]),
             "Toilets and Sewerage Connection":
              mo.vstack([
-              current_fraction_household_toilet_access,
-              projected_fraction_household_toilet_access,
-              current_percent_sewerage_connections,
-              current_public_toilets,
-              current_community_toilets])
+              number_objects['household_toilet_access']['current'],
+              number_objects['household_toilet_access']['projected'],
+              number_objects['percent_sewerage_connections']['current'],
+              number_objects['percent_sewerage_connections']['additional'],
+              number_objects['public_toilets']['current'],
+              number_objects['community_toilets']['current']])
         }
     )
     return
 
 
 @app.cell
-def __(
-    fraction_household_toilet_access,
-    percent_sewerage_connections,
-    population,
-    stp_capacity_mld,
-    stp_count,
-    total_households,
-    community_toilets,
-    public_toilets,
-):
-    total_number_households_with_toilet_access = {
-        'current': total_households['current'].value * fraction_household_toilet_access['current'].value,
-        'projected': total_households['projected'].value * fraction_household_toilet_access['projected'].value,
-        'additional': total_households['projected'].value * fraction_household_toilet_access['projected'].value - total_households['current'].value * fraction_household_toilet_access['current'].value
-        }
-    population['additional'] = population['projected'].value - population['current'].value
+def calculate_additional_demand(number_objects):
+    number_objects['population']['additional'] = number_objects['population']['projected'].value - number_objects['population']['current'].value
 
-    public_toilets['additional'] = public_toilets['current'].value *(population['projected'].value / population['current'].value - 1)
-    community_toilets['additional'] = community_toilets['current'].value *(population['projected'].value / population['current'].value - 1)
+    number_objects['public_toilets']['additional'] = number_objects['public_toilets']['current'].value *(number_objects['population']['projected'].value / number_objects['population']['current'].value - 1)
 
-    stp_total_mld = {
-        'current': stp_count.value * stp_capacity_mld.value,
-        }
+    number_objects['community_toilets']['additional'] = number_objects['community_toilets']['current'].value *(number_objects['population']['projected'].value / number_objects['population']['current'].value - 1)
 
-    sewerage_length = {
-        'current': percent_sewerage_connections['current'].value * population['current'].value,
-        'additional': percent_sewerage_connections['additional'] * population['additional']
+    number_objects['household_toilet_access']['additional'] = number_objects['household_toilet_access']['projected'].value - number_objects['household_toilet_access']['current'].value
+
+    number_objects['stp_capacity'] = {
+        'current': number_objects['stp_count'].value * number_objects['stp_unit_capacity'].value
     }
-    return (
-        sewerage_length,
-        stp_total_mld,
-        total_number_households_with_toilet_access,
-    )
+
+    number_objects['sewerage_length'] = {
+        'current': number_objects['percent_sewerage_connections']['current'].value * number_objects['population']['current'].value,
+        'additional': number_objects['percent_sewerage_connections']['additional'] * number_objects['population']['additional']
+    }
+    return
 
 
 @app.cell
-def __(
-    pd,
-    sewerage_length,
-    community_toilets,
-    total_number_households_with_toilet_access,
-    public_toilets,
-):
+def calculate_costs(number_objects, pd):
     # Construction and Operational Costs
     costs = pd.read_csv('costs.csv')
 
     costs_dict = {}
-    for index, row in costs.iterrows():
-        cost_item = row['Cost Item']
+    for index, cost_row in costs.iterrows():
+        cost_item = cost_row['Cost Item']
         costs_dict[cost_item] = {
             'capital': {
-                'low': row['Low Unit Cost'],
-                'high': row['High Unit Cost'],
-                'average': row['Avg Unit Cost'],
-                'unit': row['Capital Cost Unit']
+                'low': cost_row['Low Unit Cost'],
+                'high': cost_row['High Unit Cost'],
+                'average': cost_row['Avg Unit Cost'],
+                'unit': cost_row['Capital Cost Unit']
             },
             'operational': {
-                'low': row['Low Op Cost'],
-                'high': row['High Op Cost'],
-                'average': row['Avg Op Cost'],
-                'unit': row['Operational Cost Unit']
-            }
+                'low': cost_row['Low Op Cost'],
+                'high': cost_row['High Op Cost'],
+                'average': cost_row['Avg Op Cost'],
+                'unit': cost_row['Operational Cost Unit']
+            },
+            'varname': cost_row['varname']
         }
 
 
-    capital_costs = {
-        'household_toilet': costs_dict['Household Toilet']['capital']['average'] * total_number_households_with_toilet_access['additional'],
-        'public_toilet': costs_dict['Public Toilet']['capital']['average'] * public_toilets['additional'],
-        'community_toilet': costs_dict['Community Toilet']['capital']['average'] * community_toilets['additional'],
-        'sewer': costs_dict['Sewerage Connections']['capital']['average'] * sewerage_length['additional']
-    }
-    operational_costs = {
-        'household_toilet': costs_dict['Household Toilet']['operational']['average'] * total_number_households_with_toilet_access['additional'],
-        'public_toilet': costs_dict['Public Toilet']['operational']['average'] * public_toilets['additional'],
-        'community_toilet': costs_dict['Community Toilet']['operational']['average'] * community_toilets['additional'],
-        'sewer': costs_dict['Sewerage Connections']['operational']['average'] * sewerage_length['additional']
-    }
+    capital_costs = {}
+    operational_costs = {}
+    sub_keys = ['Household Toilet','Community Toilet','Public Toilet','Sewerage Connections']
+    for sub_key in sub_keys:
+        varname = costs_dict[sub_key]['varname']
+        capital_costs[sub_key] = {
+            'low': costs_dict[sub_key]['capital']['low'] * number_objects[varname]['additional'],
+            'high': costs_dict[sub_key]['capital']['high'] * number_objects[varname]['additional'],
+            'average': costs_dict[sub_key]['capital']['average'] * number_objects[varname]['additional'],
+            }
+        operational_costs[sub_key] = {
+            'low': costs_dict[sub_key]['operational']['low'] * number_objects[varname]['additional'],
+            'high': costs_dict[sub_key]['operational']['high'] * number_objects[varname]['additional'],
+            'average': costs_dict[sub_key]['operational']['average'] * number_objects[varname]['additional'],
+            }
 
-    # Calculate total costs
-    total_capital_cost = sum(capital_costs.values())
-    total_operational_cost = sum(operational_costs.values())
-    total_cost = total_capital_cost + total_operational_cost
-
-    # Prepare data for plotting
-    components = list(capital_costs.keys())
-    capital_values = list(capital_costs.values())
-    operational_values = list(operational_costs.values())
+    print(capital_costs)
     return (
         capital_costs,
-        capital_values,
-        components,
         cost_item,
+        cost_row,
         costs,
         costs_dict,
         index,
         operational_costs,
-        operational_values,
-        row,
-        total_capital_cost,
-        total_cost,
-        total_operational_cost,
+        sub_key,
+        sub_keys,
+        varname,
     )
 
 
 @app.cell
-def __(alt, capital_values, components, mo, operational_values, pd):
-    # Prepare data for Altair
-    data = pd.DataFrame({
-        'Component': components,
-        'Capital Cost': capital_values,
-        'Operational Cost': operational_values
-    })
+def plot_costs(alt, capital_costs, mo, operational_costs, pd):
+    stacked_average_costs = []
+    error_bars = []
+    for key in capital_costs.keys():
+        stacked_average_costs.append({
+            'Component': key,
+            'Cost': capital_costs[key]['average'],
+            'Type': 'capital'
+        })
+        stacked_average_costs.append({
+            'Component': key,
+            'Cost': operational_costs[key]['average'],
+            'Type': 'operational'
+        })
+        error_bars.append({
+            'Component': key,
+            'Cost': capital_costs[key]['high'] - capital_costs[key]['average'],
+            'Type': 'high'
+        })
+        error_bars.append({
+            'Component': key,
+            'Cost': capital_costs[key]['average'] - capital_costs[key]['low'],
+            'Type': 'low'
+        })
+                                 
+    stacked_average_costs = pd.DataFrame(stacked_average_costs)
 
     # Create stacked bar chart using Altair
-    chart = alt.Chart(data).transform_fold(
-        ['Capital Cost', 'Operational Cost'],
-        as_=['Cost Type', 'Value']
-    ).mark_bar().encode(
-        x=alt.X('Component:N', title='Components'),
-        y=alt.Y('sum(Value):Q', title='Cost (Million INR)'),
-        color='Cost Type:N',
-        tooltip=['Component:N', 'sum(Value):Q']
-    ).properties(
-        title='Breakdown of Total Cost by Component',
-        width=600,
-        height=400
-    ).transform_calculate(
-        Value='datum.Value / 1000000'  # Convert to millions
-    )
+    _cost_chart = alt.Chart(stacked_average_costs).mark_bar().encode(
+            x=alt.X('Component:N', title='Components'),
+            y=alt.Y('Cost:Q', title='Cost (INR)'),
+            color='Type:N',
+            tooltip=['Component:N', 'Cost:Q', 'Type:N']
+        ).properties(
+            title='Stacked Cost by Component',
+            width=600,
+            height=400
+        )
 
-    # Display the chart
-    cost_chart = mo.ui.altair_chart(chart, chart_selection='point')
+    cost_chart = mo.ui.altair_chart(_cost_chart)
     cost_chart
-    return chart, cost_chart, data
+    return cost_chart, error_bars, key, stacked_average_costs
+
+
+@app.cell
+def __():
+    return
 
 
 if __name__ == "__main__":

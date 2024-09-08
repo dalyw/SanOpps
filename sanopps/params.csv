@@ -1,0 +1,13 @@
+label,varname,start,stop,step,value
+Current Total Households,current_total_households,1.0,1000000.0,1.0,506353.0
+Projected Total Households,projected_total_households,1.0,1000000.0,1.0,848750.0
+Current Households with Toilet Access,current_households_with_toilet_access,1.0,1000000.0,1.0,506353.0
+Projected Households with Toilet Access,projected_households_with_toilet_access,0.0,1000000.0,1.0,848750.0
+Current Population,current_population,1.0,10000000.0,1.0,2405665.0
+Projected Population,projected_population,1.0,10000000.0,1.0,4074000.0
+STP Count,stp_count,1.0,100.0,1.0,4.0
+STP Capacity (mld),stp_unit_capacity,1.0,1000.0,1.0,340.0
+Solid Waste per Person per Day (tpd),solid_waste_per_person_per_day,0.0,1.0,0.0001,0.0005
+Current Total Number of Public Toilets,current_public_toilets,1.0,1000.0,1.0,88.0
+Current Total Number of Community Toilets,current_community_toilets,1.0,1000.0,1.0,60.0
+Current Percent of Sewerage Connections,current_percent_sewerage,0.0,1.0,0.01,0.15
