@@ -204,16 +204,6 @@ def plot_costs(alt, capital_costs, mo, operational_costs, pd):
             'Cost': operational_costs[key]['average'],
             'Type': 'operational'
         })
-        error_bars.append({
-            'Component': key,
-            'Cost': capital_costs[key]['high'] - capital_costs[key]['average'],
-            'Type': 'high'
-        })
-        error_bars.append({
-            'Component': key,
-            'Cost': capital_costs[key]['average'] - capital_costs[key]['low'],
-            'Type': 'low'
-        })
 
     stacked_average_costs = pd.DataFrame(stacked_average_costs)
 
@@ -227,8 +217,6 @@ def plot_costs(alt, capital_costs, mo, operational_costs, pd):
             title='Cost of Investment',
             width=500,
             height=300
-        ).transform_calculate(
-            y_error='datum.Type === "capital" ? ' + str(error_bars) + ' : 0'  
         )
 
     cost_chart = mo.ui.altair_chart(_cost_chart)
@@ -239,6 +227,21 @@ def plot_costs(alt, capital_costs, mo, operational_costs, pd):
 def __(cost_chart, mo):
     mo.vstack([cost_chart, cost_chart.value])
     return
+
+
+@app.cell
+def __(plt, stacked_average_costs):
+    import seaborn as sns
+
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=stacked_average_costs, x='Component', y='Cost', hue='Type', errorbar='ci', dodge=False)
+    plt.title('Cost of Investment (Seaborn)')
+    plt.ylabel('Cost (INR)')
+    plt.xlabel('Components')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+    return sns,
 
 
 if __name__ == "__main__":
