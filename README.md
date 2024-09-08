@@ -1,9 +1,9 @@
 # SanOpps
 
-## [Application](https://marimo.io/p/@sanopps/sanopps?mode=read&include-code=false)
+### [Launch Application](https://marimo.io/p/@sanopps/sanopps?mode=read&include-code=false)
 
-# Documentation
+## Documentation
 
-## [Glossary](https://dalyw.github.io/SanOpps/documentation.html)
-## [World Toilet Organization](https://worldtoilet.org)
+### [Glossary](https://dalyw.github.io/SanOpps/documentation.html)
+### [World Toilet Organization](https://worldtoilet.org)
 

@@ -15,6 +15,13 @@ def import_libraries():
 
 
 @app.cell
+def __(mo):
+    b = mo.ui.run_button()
+    b
+    return b,
+
+
+@app.cell
 def sidebar(mo):
     mo.sidebar(
         [
@@ -39,54 +46,28 @@ def sidebar(mo):
 def input_data(mo, pd):
     params = pd.read_csv('params.csv')
 
-    number_objects = {}
+    objs = {}
     for _, param_row in params.iterrows():
-        if param_row['varname'] == 'current_percent_sewerage':
-            number_objects[param_row['varname']] = mo.ui.slider(
+        if param_row['varname'] not in objs:
+            objs[param_row['varname']] = {}
+        cur_proj = param_row['current_projected']
+        if param_row['varname'] == 'percent_sewerage':
+           objs[param_row['varname']][cur_proj] = mo.ui.slider(
                 start=param_row['start'],
                 stop=param_row['stop'],
                 step=param_row['step'],
-                value=param_row['value'],
-                label=param_row['label']
+                label=param_row['label'],
+                show_value=True
             )
         else:
-            number_objects[param_row['varname']] = mo.ui.number(
+            objs[param_row['varname']][cur_proj] = mo.ui.number(
                 start=param_row['start'],
                 stop=param_row['stop'],
                 step=param_row['step'],
                 value=param_row['value'],
                 label=param_row['label']
             )
-
-    number_objects['total_households'] = {
-        'current': number_objects["current_total_households"],
-        'projected': number_objects["projected_total_households"]
-    }
-    number_objects['household_toilet_access'] = {
-        'current': number_objects["current_households_with_toilet_access"],
-        'projected': number_objects["projected_households_with_toilet_access"]
-    }
-    number_objects['population'] = {
-        'current': number_objects["current_population"],
-        'projected': number_objects["projected_population"]
-    }
-    number_objects['public_toilets'] = {
-        'current': number_objects["current_public_toilets"],
-    }
-    number_objects['community_toilets'] = {
-        'current': number_objects["current_community_toilets"],
-    }
-    number_objects['percent_sewerage_connections'] = {
-        'current': number_objects["current_percent_sewerage"],
-        'adtl': 1.0
-    }
-    return number_objects, param_row, params
-
-
-@app.cell
-def __(params):
-    print(params['varname'].tolist())
-    return
+    return cur_proj, objs, param_row, params
 
 
 @app.cell
@@ -96,55 +77,71 @@ def input_data_ui(mo):
 
 
 @app.cell
-def input_data_ui_accordion(mo, number_objects):
-    mo.accordion(
-        {
-            "Population": mo.vstack([number_objects['total_households']['current'],
-                                     number_objects['total_households']['projected'],
-                                     number_objects['population']['current'],
-                                     number_objects['population']['projected']]),
-            "Toilets and Sewerage Connection":
-             mo.vstack([
-              number_objects['household_toilet_access']['current'],
-              number_objects['household_toilet_access']['projected'],
-              number_objects['percent_sewerage_connections']['current'],
-              number_objects['public_toilets']['current'],
-              number_objects['community_toilets']['current']])
-        }
-    )
+def input_data_ui_accordion(mo, objs):
+    # mo.accordion(
+    #     {
+    #         "Population": mo.vstack([objs['total_households']['current'],
+    #                                  objs['total_households']['projected'],
+    #                                  objs['population']['current'],
+    #                                  objs['population']['projected']]),
+    #         "Toilets and Sewerage Connection":
+    #          mo.vstack([
+    #           objs['households_with_toilet_access']['current'],
+    #           objs['households_with_toilet_access']['projected'],
+    #           objs['percent_sewerage']['current'],
+    #           objs['public_toilets']['current'],
+    #           objs['community_toilets']['current']])
+    #     }
+    # )
+
+    mo.vstack([objs['total_households']['current'], 
+               objs['total_households']['projected'], 
+               objs['population']['current'], objs['population']['projected'],
+               objs['households_with_toilet_access']['current'],
+               objs['households_with_toilet_access']['projected'],
+               objs['percent_sewerage']['current'],
+               objs['public_toilets']['current'],
+               objs['community_toilets']['current']])
+
     return
 
 
 @app.cell
-def calculate_additional_demand(number_objects):
-    number_objects['population']['adtl'] = number_objects['population']['projected'].value - number_objects['population']['current'].value
+def calculate_additional_demand(b, mo, objs):
+    mo.stop(not b.value, "Click `run` to submit")
 
-    number_objects['public_toilets']['adtl'] = number_objects['public_toilets']['current'].value *(number_objects['population']['projected'].value / number_objects['population']['current'].value - 1)
+    objs['population']['adtl'] = objs['population']['projected'].value - objs['population']['current'].value
 
-    number_objects['community_toilets']['adtl'] = number_objects['community_toilets']['current'].value *(number_objects['population']['projected'].value / number_objects['population']['current'].value - 1)
+    objs['public_toilets']['adtl'] = objs['public_toilets']['current'].value *(objs['population']['projected'].value / objs['population']['current'].value - 1)
 
-    number_objects['household_toilet_access']['adtl'] = number_objects['household_toilet_access']['projected'].value - number_objects['household_toilet_access']['current'].value
+    objs['community_toilets']['adtl'] = objs['community_toilets']['current'].value *(objs['population']['projected'].value / objs['population']['current'].value - 1)
 
-    number_objects['stp_capacity'] = {
-        'current': number_objects['stp_count'].value * number_objects['stp_unit_capacity'].value
+    objs['households_with_toilet_access']['adtl'] = objs['households_with_toilet_access']['projected'].value - objs['households_with_toilet_access']['current'].value
+
+
+    objs['stp_capacity'] = {
+        'current': objs['stp_count']['current'].value * objs['stp_unit_capacity']['current'].value,
+        'adtl': objs['stp_count']['current'].value * objs['stp_unit_capacity']['current'].value / objs['population']['current'].value * objs['population']['projected'].value
     }
 
-    number_objects['sewerage_length'] = {
-        'current': number_objects['percent_sewerage_connections']['current'].value * number_objects['population']['current'].value,
-        'adtl': number_objects['percent_sewerage_connections']['adtl'] * number_objects['population']['adtl']
+    objs['percent_sewerage']['adtl'] = 1.0
+
+    objs['sewerage_length'] = {
+        'current': objs['percent_sewerage']['current'].value * objs['population']['current'].value,
+        'adtl': objs['percent_sewerage']['adtl'] * objs['population']['adtl']
     }
     return
 
 
 @app.cell
-def calculate_costs(number_objects, pd):
+def calculate_costs(objs, pd):
     # Construction and Operational Costs
     costs = pd.read_csv('costs.csv')
+    costs.set_index(costs.columns[0], inplace=True)
 
     costs_dict = {}
     for index, cost_row in costs.iterrows():
-        cost_item = cost_row['Cost Item']
-        costs_dict[cost_item] = {
+        costs_dict[index] = {
             'capital': {
                 'low': cost_row['Low Unit Cost'],
                 'high': cost_row['High Unit Cost'],
@@ -166,18 +163,17 @@ def calculate_costs(number_objects, pd):
     for sub_key in sub_keys:
         varname = costs_dict[sub_key]['varname']
         capital_costs[sub_key] = {
-            'low': costs_dict[sub_key]['capital']['low'] * number_objects[varname]['adtl'],
-            'high': costs_dict[sub_key]['capital']['high'] * number_objects[varname]['adtl'],
-            'average': costs_dict[sub_key]['capital']['average'] * number_objects[varname]['adtl'],
+            'low': costs_dict[sub_key]['capital']['low'] * objs[varname]['adtl'],
+            'high': costs_dict[sub_key]['capital']['high'] * objs[varname]['adtl'],
+            'average': costs_dict[sub_key]['capital']['average'] * objs[varname]['adtl'],
             }
         operational_costs[sub_key] = {
-            'low': costs_dict[sub_key]['operational']['low'] * number_objects[varname]['adtl'],
-            'high': costs_dict[sub_key]['operational']['high'] * number_objects[varname]['adtl'],
-            'average': costs_dict[sub_key]['operational']['average'] * number_objects[varname]['adtl'],
+            'low': costs_dict[sub_key]['operational']['low'] * objs[varname]['adtl'],
+            'high': costs_dict[sub_key]['operational']['high'] * objs[varname]['adtl'],
+            'average': costs_dict[sub_key]['operational']['average'] * objs[varname]['adtl'],
             }
     return (
         capital_costs,
-        cost_item,
         cost_row,
         costs,
         costs_dict,
@@ -205,9 +201,8 @@ def plot_costs(alt, capital_costs, mo, operational_costs, pd):
             'Type': 'operational'
         })
 
-    stacked_average_costs = pd.DataFrame(stacked_average_costs)
+    stacked_average_costs = pd.DataFrame(stacked_average_costs, copy=False)
 
-    # Create stacked bar chart using Altair
     _cost_chart = alt.Chart(stacked_average_costs).mark_bar().encode(
             x=alt.X('Component:N', title='Components'),
             y=alt.Y('Cost:Q', title='Cost (INR)'),
@@ -224,24 +219,9 @@ def plot_costs(alt, capital_costs, mo, operational_costs, pd):
 
 
 @app.cell
-def __(cost_chart, mo):
-    mo.vstack([cost_chart, cost_chart.value])
+def __(cost_chart):
+    cost_chart
     return
-
-
-@app.cell
-def __(plt, stacked_average_costs):
-    import seaborn as sns
-
-    plt.figure(figsize=(10, 6))
-    sns.barplot(data=stacked_average_costs, x='Component', y='Cost', hue='Type', errorbar='ci', dodge=False)
-    plt.title('Cost of Investment (Seaborn)')
-    plt.ylabel('Cost (INR)')
-    plt.xlabel('Components')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
-    return sns,
 
 
 if __name__ == "__main__":
