@@ -41,13 +41,22 @@ def input_data(mo, pd):
 
     number_objects = {}
     for _, param_row in params.iterrows():
-        number_objects[param_row['varname']] = mo.ui.number(
-            start=param_row['start'],
-            stop=param_row['stop'],
-            step=param_row['step'],
-            value=param_row['value'],
-            label=param_row['label']
-        )
+        if param_row['varname'] == 'current_percent_sewerage':
+            number_objects[param_row['varname']] = mo.ui.slider(
+                start=param_row['start'],
+                stop=param_row['stop'],
+                step=param_row['step'],
+                value=param_row['value'],
+                label=param_row['label']
+            )
+        else:
+            number_objects[param_row['varname']] = mo.ui.number(
+                start=param_row['start'],
+                stop=param_row['stop'],
+                step=param_row['step'],
+                value=param_row['value'],
+                label=param_row['label']
+            )
 
     number_objects['total_households'] = {
         'current': number_objects["current_total_households"],
@@ -69,7 +78,7 @@ def input_data(mo, pd):
     }
     number_objects['percent_sewerage_connections'] = {
         'current': number_objects["current_percent_sewerage"],
-        'additional': 1.0
+        'adtl': 1.0
     }
     return number_objects, param_row, params
 
@@ -99,7 +108,6 @@ def input_data_ui_accordion(mo, number_objects):
               number_objects['household_toilet_access']['current'],
               number_objects['household_toilet_access']['projected'],
               number_objects['percent_sewerage_connections']['current'],
-              number_objects['percent_sewerage_connections']['additional'],
               number_objects['public_toilets']['current'],
               number_objects['community_toilets']['current']])
         }
@@ -109,13 +117,13 @@ def input_data_ui_accordion(mo, number_objects):
 
 @app.cell
 def calculate_additional_demand(number_objects):
-    number_objects['population']['additional'] = number_objects['population']['projected'].value - number_objects['population']['current'].value
+    number_objects['population']['adtl'] = number_objects['population']['projected'].value - number_objects['population']['current'].value
 
-    number_objects['public_toilets']['additional'] = number_objects['public_toilets']['current'].value *(number_objects['population']['projected'].value / number_objects['population']['current'].value - 1)
+    number_objects['public_toilets']['adtl'] = number_objects['public_toilets']['current'].value *(number_objects['population']['projected'].value / number_objects['population']['current'].value - 1)
 
-    number_objects['community_toilets']['additional'] = number_objects['community_toilets']['current'].value *(number_objects['population']['projected'].value / number_objects['population']['current'].value - 1)
+    number_objects['community_toilets']['adtl'] = number_objects['community_toilets']['current'].value *(number_objects['population']['projected'].value / number_objects['population']['current'].value - 1)
 
-    number_objects['household_toilet_access']['additional'] = number_objects['household_toilet_access']['projected'].value - number_objects['household_toilet_access']['current'].value
+    number_objects['household_toilet_access']['adtl'] = number_objects['household_toilet_access']['projected'].value - number_objects['household_toilet_access']['current'].value
 
     number_objects['stp_capacity'] = {
         'current': number_objects['stp_count'].value * number_objects['stp_unit_capacity'].value
@@ -123,7 +131,7 @@ def calculate_additional_demand(number_objects):
 
     number_objects['sewerage_length'] = {
         'current': number_objects['percent_sewerage_connections']['current'].value * number_objects['population']['current'].value,
-        'additional': number_objects['percent_sewerage_connections']['additional'] * number_objects['population']['additional']
+        'adtl': number_objects['percent_sewerage_connections']['adtl'] * number_objects['population']['adtl']
     }
     return
 
@@ -152,24 +160,21 @@ def calculate_costs(number_objects, pd):
             'varname': cost_row['varname']
         }
 
-
     capital_costs = {}
     operational_costs = {}
     sub_keys = ['Household Toilet','Community Toilet','Public Toilet','Sewerage Connections']
     for sub_key in sub_keys:
         varname = costs_dict[sub_key]['varname']
         capital_costs[sub_key] = {
-            'low': costs_dict[sub_key]['capital']['low'] * number_objects[varname]['additional'],
-            'high': costs_dict[sub_key]['capital']['high'] * number_objects[varname]['additional'],
-            'average': costs_dict[sub_key]['capital']['average'] * number_objects[varname]['additional'],
+            'low': costs_dict[sub_key]['capital']['low'] * number_objects[varname]['adtl'],
+            'high': costs_dict[sub_key]['capital']['high'] * number_objects[varname]['adtl'],
+            'average': costs_dict[sub_key]['capital']['average'] * number_objects[varname]['adtl'],
             }
         operational_costs[sub_key] = {
-            'low': costs_dict[sub_key]['operational']['low'] * number_objects[varname]['additional'],
-            'high': costs_dict[sub_key]['operational']['high'] * number_objects[varname]['additional'],
-            'average': costs_dict[sub_key]['operational']['average'] * number_objects[varname]['additional'],
+            'low': costs_dict[sub_key]['operational']['low'] * number_objects[varname]['adtl'],
+            'high': costs_dict[sub_key]['operational']['high'] * number_objects[varname]['adtl'],
+            'average': costs_dict[sub_key]['operational']['average'] * number_objects[varname]['adtl'],
             }
-
-    print(capital_costs)
     return (
         capital_costs,
         cost_item,
@@ -209,7 +214,7 @@ def plot_costs(alt, capital_costs, mo, operational_costs, pd):
             'Cost': capital_costs[key]['average'] - capital_costs[key]['low'],
             'Type': 'low'
         })
-                                 
+
     stacked_average_costs = pd.DataFrame(stacked_average_costs)
 
     # Create stacked bar chart using Altair
@@ -219,18 +224,20 @@ def plot_costs(alt, capital_costs, mo, operational_costs, pd):
             color='Type:N',
             tooltip=['Component:N', 'Cost:Q', 'Type:N']
         ).properties(
-            title='Stacked Cost by Component',
-            width=600,
-            height=400
+            title='Cost of Investment',
+            width=500,
+            height=300
+        ).transform_calculate(
+            y_error='datum.Type === "capital" ? ' + str(error_bars) + ' : 0'  
         )
 
     cost_chart = mo.ui.altair_chart(_cost_chart)
-    cost_chart
     return cost_chart, error_bars, key, stacked_average_costs
 
 
 @app.cell
-def __():
+def __(cost_chart, mo):
+    mo.vstack([cost_chart, cost_chart.value])
     return
 
 
