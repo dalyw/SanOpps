@@ -102,12 +102,11 @@ def input_data_ui_accordion(mo, objs):
                objs['percent_sewerage']['current'],
                objs['public_toilets']['current'],
                objs['community_toilets']['current']])
-
     return
 
 
 @app.cell
-def calculate_additional_demand(b, mo, objs):
+def calculate_additional_demand(alt, b, mo, objs, pd):
     mo.stop(not b.value, "Click `run` to submit")
 
     objs['population']['adtl'] = objs['population']['projected'].value - objs['population']['current'].value
@@ -130,11 +129,8 @@ def calculate_additional_demand(b, mo, objs):
         'current': objs['percent_sewerage']['current'].value * objs['population']['current'].value,
         'adtl': objs['percent_sewerage']['adtl'] * objs['population']['adtl']
     }
-    return
 
 
-@app.cell
-def calculate_costs(objs, pd):
     # Construction and Operational Costs
     costs = pd.read_csv('costs.csv')
     costs.set_index(costs.columns[0], inplace=True)
@@ -172,21 +168,9 @@ def calculate_costs(objs, pd):
             'high': costs_dict[sub_key]['operational']['high'] * objs[varname]['adtl'],
             'average': costs_dict[sub_key]['operational']['average'] * objs[varname]['adtl'],
             }
-    return (
-        capital_costs,
-        cost_row,
-        costs,
-        costs_dict,
-        index,
-        operational_costs,
-        sub_key,
-        sub_keys,
-        varname,
-    )
 
 
-@app.cell
-def plot_costs(alt, capital_costs, mo, operational_costs, pd):
+
     stacked_average_costs = []
     error_bars = []
     for key in capital_costs.keys():
@@ -215,13 +199,23 @@ def plot_costs(alt, capital_costs, mo, operational_costs, pd):
         )
 
     cost_chart = mo.ui.altair_chart(_cost_chart)
-    return cost_chart, error_bars, key, stacked_average_costs
 
-
-@app.cell
-def __(cost_chart):
     cost_chart
-    return
+    return (
+        capital_costs,
+        cost_chart,
+        cost_row,
+        costs,
+        costs_dict,
+        error_bars,
+        index,
+        key,
+        operational_costs,
+        stacked_average_costs,
+        sub_key,
+        sub_keys,
+        varname,
+    )
 
 
 if __name__ == "__main__":
