@@ -8,7 +8,7 @@ import json
 import os
 
 # Load constants from CSV
-constants = pd.read_csv("../data/params.csv", index_col="Indicator")
+constants = pd.read_csv("https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/params.csv", index_col="Indicator")
 
 # Extract constants
 rate_decadal_growth = constants.loc["Rate of decadal growth of population (in percentage)", "Value"]
