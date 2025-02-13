@@ -7,11 +7,36 @@ import time
 import json
 import os
 
-from params import *
-city_default_data = pd.read_csv('../data/city_default_data.csv')
+# Load constants from CSV
+constants = pd.read_csv("../data/params.csv", index_col="Indicator")
+
+# Extract constants
+rate_decadal_growth = constants.loc["Rate of decadal growth of population (in percentage)", "Value"]
+fhtc_cost_per_household = constants.loc["FHTC cost per household", "Value"]
+persons_per_wc_ct = constants.loc["Number of persons in slums per WC(CT)", "Value"]
+# wc_ct_current = constants.loc["Number of WC(CT) (current)", "Value"]
+capital_cost_wc_ct = constants.loc["Capital cost of construction per WC(CT)", "Value"]
+persons_per_wc_pt = constants.loc["Number of persons (floating population) per WC(PT)", "Value"]
+wc_pt_current = constants.loc["Number of WC(PT)(current)", "Value"]
+capital_cost_wc_pt = constants.loc["Capital cost of construction per WC(PT)", "Value"]
+cost_sewer_network = constants.loc["Cost of laying sewerage network", "Value"]
+annual_maintenance_sewer_network = constants.loc["Annual Maintenance cost for Sewerage Network per KM", "Value"]
+cost_stp_per_mld = constants.loc["Cost of STP per MLD of wastewater", "Value"]
+annual_maintenance_stp = constants.loc["Annual maintenance cost of STP per MLD of waste water", "Value"]
+desludging_frequency = constants.loc["Desludging frequency for servicing household having septic tanks", "Value"]
+septage_emptied_per_household = constants.loc["Septage emptied per household during desludging of septic tank", "Value"]
+cost_co_treatment = constants.loc["Cost of co treatment facility at STP", "Value"]
+cost_fstp = constants.loc["Cost of FSTP", "Value"]
+annual_maintenance_fstp = constants.loc["Total annual maintenance cost of FSTP", "Value"]
+ulb_officials_trained = constants.loc["ULB officials to be trained", "Value"]
+annual_cost_capacity_building = constants.loc["Annual Cost of capacity building per person(projected)", "Value"]
+annual_cost_public_awareness = constants.loc["Annual cost of public awareness campaign per person (projected)", "Value"]
+discount_rate = constants.loc["Discount Rate", "Value"]
+
+city_default_data = pd.read_csv('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/city_default_data.csv')
 
 # Title of the application
-st.title("SanOpps: The Cost-Benefit Analysis Tool")
+st.title("SanOpps: The WASH Cost-Benefit Analysis Tool for Local Government")
 
 # Create tabs for input and results
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Home Page", "Input Parameters", "Dashboard", "Summary", "Definitions", "Help"])
@@ -145,7 +170,7 @@ with tab1:
         script_placeholder.empty()
 
 # Load the CSV files
-input_labels = pd.read_csv('../data/input_labels.csv')
+input_labels = pd.read_csv('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/input_labels.csv')
 city_default_data = pd.read_csv('../data/city_default_data.csv')
 
 def generate_inputs():
@@ -240,7 +265,7 @@ with tab2:
                     else:
                         empty_inputs.append(key)
 
-            year_current=int(year_current)      
+            # st.session_state.current_year=int(st.session_state.current_year)      
             if empty_inputs:
                 st.error("Please fill in all inputs before proceeding")
             else:
@@ -251,8 +276,8 @@ with tab2:
 
                 
                 # Loop through the next 30 years
-                for year in range(year_current, year_current + 31):
-                    n = (year - year_current) / 10
+                for year in range(st.session_state.current_year, st.session_state.current_year + 31):
+                    n = (year - st.session_state.current_year) / 10
                     pop_projected = st.session_state.urban_pop * (1 + rate_decadal_growth / 100) ** n
                     pop_additional = pop_projected - st.session_state.urban_pop
 
@@ -308,14 +333,14 @@ with tab2:
                         capital_cost_piped_water + total_capital_cost_wc_ct + total_capital_cost_wc_pt +
                         capital_cost_sewer_network + capital_cost_additional_stp + cost_fstp_total +
                         total_training_outreach_cost
-                    ) / ((1 + discount_rate/100) ** (year - year_current))
+                    ) / ((1 + discount_rate/100) ** (year - st.session_state.current_year))
 
                     present_value_total_benefits = (
                         (st.session_state.disease_incidence * st.session_state.treatment_cost) + (st.session_state.disease_incidence * st.session_state.transport_cost) +
                         (gdp_per_capita * st.session_state.working_age_pop / 100 * 5 * 8) +  # Productive time loss savings
                         (st.session_state.recycled_water_value * sewage_generated_projected * 365 * 1000) +  # Recycled water benefits
                         (st.session_state.tourism_contribution / 100 * gdp_per_capita * pop_projected)  # Tourism benefits
-                    ) / ((1 + discount_rate/100) ** (year - year_current))
+                    ) / ((1 + discount_rate/100) ** (year - st.session_state.current_year))
 
                     # Calculate benefit-to-cost ratio
                     benefit_to_cost_ratio = present_value_total_benefits / present_value_total_cost
@@ -427,7 +452,8 @@ with tab4:
         else:
             st.warning("No data available for summary years")
 
-definitions = pd.read_csv('../data/sanitation_variables.csv')
+definitions = pd.read_csv('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/sanitation_variables.csv')
+
 with tab5:
     st.write("### Sanitation Variables Glossary")
     
