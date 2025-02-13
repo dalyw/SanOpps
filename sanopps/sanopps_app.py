@@ -171,7 +171,6 @@ with tab1:
 
 # Load the CSV files
 input_labels = pd.read_csv('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/input_labels.csv')
-city_default_data = pd.read_csv('../data/city_default_data.csv')
 
 def generate_inputs():
     # Configuration management
