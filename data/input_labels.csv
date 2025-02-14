@@ -1,42 +1,42 @@
-label,unit,key,default_value
-Initial Cost Investment Year,Year,initial_cost_year,2026
-Currency," ",currency,INR
-Urban Population,People,urban_pop,
-Slum Population,People,slum_pop,
-Floating Population,People,floating_pop,
-Current Year," ",current_year,
-Rate of Decadal Growth of Population,%,growth_rate,
-Target Year," ",target_year,
-Inflation Rate,%,inflation,
-Number of Urban Households,Households,urban_households,506354
-Households with Tap Water,%,tap_water_pct,76.4
-FHTC Construction Cost,currency,fhtc_cost,25000
-Community Toilets,Units,comm_toilets,1200
-Community Toilet Cost,currency,comm_toilet_cost,98000
-Public Toilets,Units,public_toilets,88
-Public Toilet Cost,currency,public_toilet_cost,100000
-Water Consumption Per Capita,LPCD,water_consumption,135
-STP Design Capacity,MLD,stp_capacity,200
-STP Construction Cost,currency/MLD,stp_cost,30000000
-STP Annual Maintenance,currency/MLD,stp_maint_cost,800000
-City GDP,currency/Year,gdp,292607
-Working Age Population,%,working_age_pop,60.7
-Disease Incidence,Cases/Year,disease_incidence,2456
-Treatment Cost,currency/Instance,treatment_cost,3000
-Transportation Cost,currency,transport_cost,100
-Sewer Network Length,Km,sewer_length,1670
-Current Sewer Connection,%,current_sewer_pop,96
-Projected Sewer Connection,%,projected_sewer_pop,98
-Sewer Construction Cost,currency/Km,sewer_const_cost,2000000
-Sewer Annual Maintenance,currency/Km,sewer_maint_cost,65000
-Desludging Frequency,Years,desludging_freq,5
-Co Treatment at STP Available?," ",co_treat_avail,NO
-FSTPs Available?," ",fstp_avail,NO
-FSTP Design Capacity,KLD,fstp_capacity,0.00
-FSTP Cost,currency/KL,fstp_cost,350000.00
-FSTP Annual Maintenance,currency/KLD,fstp_maint_cost,50000
-Co Treatment at STP Proposed?," ",co_treat_proposed,NO
-Community Training Cost,currency/Person,training_cost,10000
-Public Awareness Cost,currency/Person,awareness_cost,25
-Recycled Water Value,currency/KL,recycled_water_value,15
-Tourism GDP Contribution,%,tourism_contribution,9.1
+label,unit,key,default_value,type,category,value_type
+Initial Cost Investment Year," ",initial_cost_year,2026,user_input,Demographic and Growth Information,int
+Currency," ",currency,INR,user_input,Demographic and Growth Information,str
+Urban Population,People,urban_pop,1000000,user_input,Demographic and Growth Information,int
+Slum Population,People,slum_pop,1000,user_input,Demographic and Growth Information,int
+Floating Population,People,floating_pop,1000,user_input,Demographic and Growth Information,int
+Current Year," ",current_year,2025,user_input,Demographic and Growth Information,int
+Rate of Decadal Growth of Population,%,growth_rate,10,user_input,Demographic and Growth Information,float
+Target Investment Year," ",investment_year,2030,user_input,Demographic and Growth Information,int
+Inflation Rate,%,inflation,6,user_input,Demographic and Growth Information,float
+Number of Urban Households,Households,urban_households,500000,user_input,Demographic and Growth Information,int
+Households with Tap Water,%,tap_water_pct,75,user_input,Drinking Water,float
+FHTC Construction Cost,currency,fhtc_cost,25000,optional_input,Drinking Water,float
+Community Toilets,Units,comm_toilets,1200,user_input,Toilets,int
+Community Toilet Cost,currency,comm_toilet_cost,98000,optional_input,Toilets,float
+Public Toilets,Units,public_toilets,88,user_input,Toilets,int
+Public Toilet Cost,currency,public_toilet_cost,100000,optional_input,Toilets,float
+Water Consumption Per Capita,LPCD,water_consumption,135,optional_input,Drinking Water,float
+STP Design Capacity,MLD,stp_capacity,200,user_input,Centralized Treatment,float
+STP Construction Cost,currency/MLD,stp_cost,30000000,optional_input,Centralized Treatment,float
+STP Annual Maintenance,currency/MLD,stp_maint_cost,800000,optional_input,Centralized Treatment,float
+City GDP,currency/Year,gdp,292607,user_input,Demographic and Growth Information,float
+Working Age Population,%,working_age_pop,60.7,user_input,Demographic and Growth Information,float
+Disease Incidence,Cases/Year,disease_incidence,2456,user_input,Disease,int
+Treatment Cost,currency/Instance,treatment_cost,3000,optional_input,Disease,float
+Transportation Cost,currency,transport_cost,100,optional_input,Centralized Treatment,float
+Sewer Network Length,Km,sewer_length,1670,user_input,Centralized Treatment,float
+Current Sewer Connection,%,current_sewer_pop,96,user_input,Centralized Treatment,float
+Projected Sewer Connection,%,projected_sewer_pop,98,optional_input,Centralized Treatment,float
+Sewer Construction Cost,currency/Km,sewer_const_cost,2000000,optional_input,Centralized Treatment,float
+Sewer Annual Maintenance,currency/Km,sewer_maint_cost,65000,optional_input,Centralized Treatment,float
+Desludging Frequency,Years,desludging_freq,5,optional_input,Decentralized Treatment,float
+Co Treatment at STP Available?," ",co_treat_avail,NO,optional_input,Decentralized Treatment,str
+FSTPs Available?," ",fstp_avail,NO,user_input,Decentralized Treatment,str
+FSTP Design Capacity,KLD,fstp_capacity,0.00,optional_input,Decentralized Treatment,float
+FSTP Cost,currency/KL,fstp_cost,350000.00,optional_input,Decentralized Treatment,float
+FSTP Annual Maintenance,currency/KLD,fstp_maint_cost,50000,optional_input,Decentralized Treatment,float
+Co Treatment at STP Proposed?," ",co_treat_proposed,NO,optional_input,Decentralized Treatment,str
+Community Training Cost,currency/Person,training_cost,10000,optional_input,Training and Outreach,float
+Public Awareness Cost,currency/Person,awareness_cost,25,optional_input,Training and Outreach,float
+Recycled Water Value,currency/KL,recycled_water_value,15,optional_input,Training and Outreach,float
+Tourism GDP Contribution,%,tourism_contribution,9.1,user_input,Demographic and Growth Information,float
