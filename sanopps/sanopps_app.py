@@ -1,13 +1,20 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from streamlit.components.v1 import html
-from streamlit.components import v1 as components
+import streamlit.components.v1 as components
 import time
 import json
 import os
 import requests
 import copy
+import plotly.graph_objects as go
+from helpers import *
+
+# Function to initialize session state
+def initialize_session_state(keys, default_values):
+    for key, default_value in zip(keys, default_values):
+        if key not in st.session_state:
+            st.session_state[key] = default_value
 
 read_local = False
 if read_local:
@@ -24,7 +31,6 @@ else:
     params = pd.read_csv("https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/params.csv")
     doc_content = requests.get('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/sanopps/documentation.html').text
 
-
 # add params to st.session_state
 for _, row in params.iterrows():
     if pd.notna(row['varname']): 
@@ -34,22 +40,94 @@ st.title("SanOpps: The WASH Cost-Benefit Analysis Tool for Local Government")
 
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Home Page", "Input Parameters", "Dashboard", "Summary", "Definitions", "Help"])
 
-def switch_tab(tab):
-    return f"""
-    var tabGroup = window.parent.document.getElementsByClassName("stTabs")[0]
-    var tab = tabGroup.getElementsByTagName("button")
-    tab[{tab}].click()
-    """
-
 # Initialize session state for calculations
-if 'calculations_done' not in st.session_state:
-    st.session_state.calculations_done = False
+initialize_session_state(['calculations_done', 'results_df', 'summary_data'], [False, None, None])
+
+# Create configs directory if it doesn't exist
+if not os.path.exists('configs'):
+    os.makedirs('configs')
+# Function to handle input generation
+def generate_inputs(input_labels, category, input_type):
+    inputs = input_labels[(input_labels['category'] == category) & (input_labels['type'] == input_type)]
     
-if 'results_df' not in st.session_state:
-    st.session_state.results_df = None
+    # Currency conversion rates (hardcoded for now, could be made dynamic)
+    conversion_rates = {
+        'INR': 1,
+        'USD': 83.28,  # 1 USD = 83.28 INR
+        'EUR': 89.13   # 1 EUR = 89.13 INR
+    }
     
-if 'summary_data' not in st.session_state:
-    st.session_state.summary_data = None
+    for _, row in inputs.iterrows():
+        name_col, input_col, units_col, percent_col = st.columns([1, 1, 1, 1])
+        with name_col:
+            st.write(row['label'])
+        with input_col:
+            key = row['key']
+            if key not in st.session_state:
+                default_value = float(row['default_value']) if row['value_type'] == 'float' else int(row['default_value']) if row['value_type'] == 'int' else str(row['default_value'])
+                st.session_state[key] = default_value
+                if pd.notna(row['percent_option']):
+                    st.session_state[key+"_percent"] = default_value/st.session_state.get(row['percent_option'], 1)*100 if row['unit'] != '%' else default_value
+            
+            if key in ['currency', 'co_treat_avail', 'fstp_avail', 'co_treat_proposed']:
+                options = ["INR", "USD", "EUR"] if key == 'currency' else ["NO", "YES"]
+                selected = st.selectbox("", options, key=f"select_{key}", label_visibility="collapsed")
+                if key == 'currency' and selected != st.session_state.get('prev_currency'):
+                    # Convert all monetary values when currency changes
+                    if 'prev_currency' in st.session_state:
+                        old_rate = conversion_rates[st.session_state.prev_currency]
+                        new_rate = conversion_rates[selected]
+                        conversion_factor = old_rate / new_rate
+                        
+                        # Convert all monetary inputs
+                        for monetary_key in st.session_state:
+                            if isinstance(st.session_state[monetary_key], (int, float)):
+                                # Check if the key corresponds to a monetary value
+                                monetary_label = input_labels[input_labels['key'] == monetary_key]
+                                if not monetary_label.empty and 'currency' in str(monetary_label.iloc[0]['unit']):
+                                    st.session_state[monetary_key] *= conversion_factor
+                    
+                    st.session_state.prev_currency = selected
+            else:
+                if pd.notna(row['percent_option']):
+                    percent_toggle = st.session_state.get(f"{key}_percent_toggle", row['unit'] == '%')
+                    if percent_toggle:
+                        value = st.number_input(
+                            "",
+                            value=st.session_state[key+"_percent"],
+                            label_visibility="collapsed",
+                            key=f"percent_{key}"
+                        )
+                        st.session_state[key+"_percent"] = value
+                        st.session_state[key] = value * st.session_state.get(row['percent_option'], 0) / 100 if row['unit'] != '%' else value
+                    else:
+                        value = st.number_input("", value=st.session_state[key], label_visibility="collapsed", key=f"direct_{key}")
+                        st.session_state[key] = value
+                        st.session_state[key+"_percent"] = value/st.session_state.get(row['percent_option'], 1)*100
+                else:
+                    value = st.number_input("", value=st.session_state[key], label_visibility="collapsed", key=f"input_{key}")
+                    st.session_state[key] = value
+        with units_col:
+            if pd.notna(row['percent_option']):
+                if st.session_state.get(f"{key}_percent_toggle", row['unit'] == '%'):
+                    st.write(f"% of {row['percent_option']}")
+                else:
+                    # Get the unit of the referenced variable
+                    ref_var = input_labels[input_labels['key'] == row['percent_option']]
+                    if not ref_var.empty:
+                        ref_var_unit = ref_var.iloc[0]['unit']
+                        st.write(ref_var_unit)
+                    else:
+                        st.write("")
+            elif row['unit']:
+                st.write(row['unit'].replace('currency', st.session_state.currency) if 'currency' in str(row['unit']) else row['unit'])
+            else:
+                st.write("")
+        with percent_col:
+            if pd.notna(row['percent_option']):
+                st.checkbox(f"Input as %", key=f"{key}_percent_toggle", value=row['unit']=='%')
+            else:
+                st.write("")
 
 # Create configs directory if it doesn't exist
 if not os.path.exists('configs'):
@@ -67,7 +145,7 @@ def save_config():
     json_str = json.dumps(config)
     
     # Get filename from user
-    filename = st.text_input("Enter filename (without .json extension)", "sanopps_config")
+    filename = st.text_input("Enter filename (without .json extension)", "sanopps_config", label="Configuration filename")
     
     if filename:  # Only show download button after filename is entered
         # Replace spaces with underscores
@@ -83,14 +161,14 @@ def save_config():
 
 def load_config():
     """Load configuration from JSON file"""
-    uploaded_file = st.file_uploader("Upload configuration file", type=['json'])
+    uploaded_file = st.file_uploader("Upload configuration file", type=['json'], label="Configuration file")
     if uploaded_file is not None:
         config = json.load(uploaded_file)
         # Update session state with loaded config
         for key, value in config.items():
             st.session_state[key] = value
-        st.success("Configuration loaded successfully")
-        
+        st.success("Configuration loaded successfully")  
+
 with tab1:
     # Use container to force full height
     with st.container():
@@ -184,15 +262,12 @@ with tab1:
     # Add "Next" button to go to Input Parameters tabs
     if st.button("Next: Input City Data"):
         script_placeholder = st.empty()
-        html(f"<script>{switch_tab(1)}</script>", height=0)
+        components.html(f"<script>{switch_tab(1)}</script>", height=0)
         time.sleep(0.1)
         script_placeholder.empty()
-
+        
 with tab2:
-    st.markdown("""
-    Please Enter Current Year Data to Ensure Precise Cost and Benefit Estimations
-    """)
-
+    st.markdown("Please Enter Current Year Data to Ensure Precise Cost and Benefit Estimations")
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Save Current Configuration"):
@@ -200,108 +275,38 @@ with tab2:
     with col2:
         if st.button("Load Configuration"):
             load_config()
-    
 
     country_col, state_col, city_col = st.columns(3)
     with country_col:
-        country = st.selectbox("Select Country", list(city_default_data['Country'].unique())+['Other'], key="country")
+        country = st.selectbox("Select Country", list(city_default_data['Country'].unique()) + ['Other'], key="country")
     with state_col:
-        state = st.selectbox("Select State/Province", list(city_default_data[city_default_data['Country']==country]['State/Province'].unique())+['Other'], key="state")
+        state = st.selectbox("Select State/Province", list(city_default_data[city_default_data['Country'] == country]['State/Province'].unique()) + ['Other'], key="state")
     with city_col:
-        # Store previous city value to detect changes
         prev_city = st.session_state.get('prev_city', None)
-        city = st.selectbox("Select City", list(city_default_data[(city_default_data['Country']==country) & (city_default_data['State/Province']==state)]['City'].unique())+['Other'], key="city")
-        # Check if city selection changed
+        city = st.selectbox("Select City", list(city_default_data[(city_default_data['Country'] == country) & (city_default_data['State/Province'] == state)]['City'].unique()) + ['Other'], key="city")
         if city != prev_city and city in city_default_data['City'].values:
             city_data = city_default_data[city_default_data['City'] == city].iloc[0]
-            # Initialize session state values if they don't exist
-            for key in ['currency', 'urban_pop', 'current_year', 'growth_rate', 'target_year', 'inflation']:
-                if key not in st.session_state:
-                    default_value = input_labels[input_labels['key']==key]['default_value'].iloc[0]
-                    st.session_state[key] = city_data.get(key, default_value)
-            # Store current city as previous
+            keys = ['currency', 'urban_pop', 'current_year', 'growth_rate', 'target_year', 'inflation']
+            for key in keys:
+                if key in city_data:
+                    st.session_state[key] = city_data[key]
             st.session_state.prev_city = city
 
-    # Use the function to generate inputs
-    # Group inputs by category
     categories = input_labels['category'].unique()
-    
-    # First show required user inputs
     for category in categories:
         st.subheader(category)
+        category_inputs = input_labels[input_labels['category'] == category]
         
-        # Get user inputs for this category
-        user_inputs = input_labels[
-            (input_labels['category'] == category) & 
-            (input_labels['type'] == 'user_input')
-        ]
+        # Handle required inputs
+        required_inputs = category_inputs[category_inputs['type'] == 'user_input']
+        for _, row in required_inputs.iterrows():
+            generate_inputs(input_labels[input_labels['key'] == row['key']], category, 'user_input')
         
-        # Generate inputs for each row
-        for _, row in user_inputs.iterrows():
-            name_col, input_col, units_col = st.columns([1,1,1])
-            with name_col:
-                st.write(row['label'])
-            with input_col:
-                key = row['key']
-                # Initialize session state if not already set
-                if key not in st.session_state:
-                    print(key)
-                    st.session_state[key] = float(row['default_value']) if row['value_type'] == 'float' else int(row['default_value']) if row['value_type'] == 'int' else str(row['default_value'])
-                
-                if key in ['currency', 'co_treat_avail', 'fstp_avail', 'co_treat_proposed']:
-                    options = ["INR", "USD", "EUR"] if key == 'currency' else ["NO", "YES"]
-                    st.selectbox("", options, key=key, label_visibility="collapsed")
-                else:
-                    value = st.number_input("", 
-                        value=float(st.session_state[key]) if row['value_type'] == 'float' else int(st.session_state[key]) if row['value_type'] == 'int' else str(st.session_state[key]),
-                        label_visibility="collapsed", 
-                        key=f"input_{key}")  # Use unique key
-                    st.session_state[key] = value  # Update session state
-            with units_col:
-                if row['unit']:
-                    if 'currency' in str(row['unit']):
-                        st.write(row['unit'].replace('currency', st.session_state.currency))
-                    else:
-                        st.write(row['unit'])
-                else:
-                    st.write("")
-        
-        # Show optional inputs in expander
-        optional_inputs = input_labels[
-            (input_labels['category'] == category) & 
-            (input_labels['type'] == 'optional_input')
-        ]
-        
-        if not optional_inputs.empty:
-            with st.expander(f"Optional {category} Parameters"):
-                for _, row in optional_inputs.iterrows():
-                    name_col, input_col, units_col = st.columns([1,1,1])
-                    with name_col:
-                        st.write(row['label'])
-                    with input_col:
-                        key = row['key']
-                        print(key)
-                        # Initialize session state if not already set
-                        if key not in st.session_state:
-                            st.session_state[key] = float(row['default_value']) if row['value_type'] == 'float' else int(row['default_value']) if row['value_type'] == 'int' else str(row['default_value'])
-                            
-                        if key in ['currency', 'co_treat_avail', 'fstp_avail', 'co_treat_proposed']:
-                            options = ["INR", "USD", "EUR"] if key == 'currency' else ["NO", "YES"]
-                            st.selectbox("", options, key=key, label_visibility="collapsed")
-                        else:
-                            value = st.number_input("", 
-                                value=st.session_state[key],
-                                label_visibility="collapsed", 
-                                key=f"input_opt_{key}")  # Use unique key
-                            st.session_state[key] = value  # Update session state
-                    with units_col:
-                        if row['unit']:
-                            if 'currency' in str(row['unit']):
-                                st.write(row['unit'].replace('currency', st.session_state.currency))
-                            else:
-                                st.write(row['unit'])
-                        else:
-                            st.write("")
+        # Handle optional inputs in expander
+        with st.expander(f"Optional {category} Parameters"):
+            optional_inputs = category_inputs[category_inputs['type'] == 'optional_input']
+            for _, row in optional_inputs.iterrows():
+                generate_inputs(input_labels[input_labels['key'] == row['key']], category, 'optional_input')
 
     # Submit Button
     if st.button("Submit"):
@@ -322,8 +327,8 @@ with tab2:
             benefit_to_cost_ratios, results_data, state_snapshots = [], [], []
 
             # Calculate base values
-            gdp_per_capita = st.session_state.gdp / st.session_state.urban_pop
-            hourly_monetary_income = gdp_per_capita/(8*5*52) # 8 hours per day, 5 days per week, 52 weeks per year
+            gdp = st.session_state.gdp_per_capita * st.session_state.urban_pop
+            hourly_monetary_income = st.session_state.gdp_per_capita/(8*5*52) # 8 hours per day, 5 days per week, 52 weeks per year
 
             # Population projections
             n_years = [(year - st.session_state.current_year) / 10 for year in years]
@@ -340,18 +345,19 @@ with tab2:
             urban_households_array = [pop / household_ratio for pop in pop_array]
             
             # Water connections array - target 100% FHTC coverage
-            urban_households_with_fhtc = (st.session_state.tap_water_pct/100) * st.session_state.urban_households
-            urban_households_without_fhtc = [households - urban_households_with_fhtc for households in urban_households_array]
+            # urban_households_with_fhtc = (st.session_state.urban_households_with_fhtp_percent/100) * st.session_state.urban_households
+            urban_households_without_fhtc = [households - st.session_state.urban_households_with_fhtp for households in urban_households_array]
 
             # Toilet calculations - 30 persons per WC as per SBM 2.0
+            # persons_per_wc = 30
             ct_array = [slum_pop / st.session_state.persons_per_wc for slum_pop in slum_pop_array]
             pt_array = [floating_pop / st.session_state.persons_per_pt for floating_pop in floating_pop_array]
             additional_ct_array = [ct - st.session_state.comm_toilets * st.session_state.wc_per_ct for ct in ct_array] # Assuming 20 WCs per CT block
             additional_pt_array = [pt - st.session_state.public_toilets * st.session_state.wc_per_ct for pt in pt_array]
 
             # Sewer calculations array - maintain current coverage %
-            pop_connected_sewer_array = [(st.session_state.current_sewer_pop/100) * pop for pop in pop_array]
-            sewer_length_per_person = st.session_state.sewer_length / ((st.session_state.current_sewer_pop/100) * st.session_state.urban_pop)
+            pop_connected_sewer_array = [(st.session_state.urban_households_with_sewer_percent/100) * pop for pop in pop_array]
+            sewer_length_per_person = st.session_state.sewer_length / ((st.session_state.urban_households_with_sewer_percent/100) * st.session_state.urban_pop)
             sewer_network_array = [(pop * sewer_length_per_person) / 1000 for pop in pop_connected_sewer_array] # Convert m to km
             gap_sewer_network_array = [max(0, network - st.session_state.sewer_length) for network in sewer_network_array]
             
@@ -360,7 +366,7 @@ with tab2:
             gap_treatment_capacity_array = [max(0, sewage - st.session_state.stp_capacity) for sewage in sewage_generated_array]
             
             # FSTP calculations array
-            households_septic_tanks_array = [households * (1 - st.session_state.current_sewer_pop/100) for households in urban_households_array]
+            households_septic_tanks_array = [households * (1 - st.session_state.urban_households_with_sewer_percent/100) for households in urban_households_array]
             septage_treated_per_day_array = [(households * st.session_state.septage_emptied_per_household) / (st.session_state.desludging_frequency * 300) for households in households_septic_tanks_array] # 3KL per household, 10 year desludging, 300 working days
             # Initialize component dictionaries
             
@@ -489,7 +495,7 @@ with tab2:
                     recycled_water_benefits = st.session_state.wastewater_reuse_pct/100 * sewage_generated_array[i] * 365 * 1000 * st.session_state.treated_water_price
                     
                     # Tourism benefits - 10% GDP increase from improved sanitation
-                    tourism_benefits = 0.091 * gdp_per_capita * pop_array[i] * 0.1
+                    tourism_benefits = 0.091 * st.session_state.gdp_per_capita * pop_array[i] * 0.1
 
                     present_value_total_benefits = (
                         health_benefits + productivity_benefits_working + productivity_benefits_nonworking + 
@@ -558,7 +564,7 @@ with tab2:
 
             # Switch to Dashboard tab
             script_placeholder = st.empty()
-            html(f"<script>{switch_tab(2)}</script>", height=0)
+            components.html(f"<script>{switch_tab(2)}</script>", height=0)
             time.sleep(0.1)
             script_placeholder.empty()
 with tab3:
@@ -609,11 +615,10 @@ with tab3:
         fig.data[1].update(line_color='grey', name='Cumulative Costs', mode='lines+markers')      # Costs line
         fig.data[2].update(line_color='blue', mode='lines+markers')                    # Ratio line
         st.plotly_chart(fig)
-
         # Create pie charts of benefit and cost components
         if st.session_state.state_snapshots:
             # Get available years from snapshots
-            summary_years = [2030, 2040, 2050, 2060]
+            summary_years = [2035, 2040,2045, 2050, 2055, 2060]
             years = list(range(st.session_state.current_year, 2061))
             
             # Year selector
@@ -627,26 +632,31 @@ with tab3:
             year_index = years.index(selected_year)
 
             col1, col2 = st.columns(2)
-            
             with col1:
                 # Get benefit components for selected year
                 selected_benefits = None
                 for snapshot in st.session_state.state_snapshots:
-                    print(snapshot.keys())
                     if snapshot['year'] == selected_year and snapshot.get('cumulative_benefit_components'):
                         selected_benefits = snapshot['cumulative_benefit_components']
                         break
                 
                 if selected_benefits:
-                    fig_benefits = px.pie(
-                        values=list(selected_benefits.values()),
-                        names=list(selected_benefits.keys()),
-                        title=f"Distribution of Net Present Value Benefits ({selected_year})",
-                        color_discrete_sequence=['#006400', '#008000', '#228B22', '#32CD32', '#90EE90', '#98FB98', '#ADFF2F']  # Distinct shades of green
+                    benefit_colors = ['#006400', '#008000', '#228B22', '#32CD32', '#90EE90', '#98FB98', '#ADFF2F']
+                    fig_benefits = create_pie_chart(
+                        selected_benefits,
+                        f"Cumulative\nBenefits\n({selected_year})",
+                        benefit_colors
                     )
-                    fig_benefits.update_traces(textposition='outside', textinfo='percent+label')
-                    fig_benefits.update_layout(showlegend=False)
                     st.plotly_chart(fig_benefits)
+
+                    fig_benefits_bar = create_bar_chart(
+                        selected_benefits,
+                        "Cumulative Contribution to Benefits",
+                        'green'
+                    )
+                    # Make benefit-to-cost ratio line thicker
+                    fig_benefits_bar.data[1].update(line=dict(width=3))
+                    st.plotly_chart(fig_benefits_bar)
 
             with col2:
                 # Get cost components for selected year
@@ -657,15 +667,20 @@ with tab3:
                         break
                 
                 if selected_costs:
-                    fig_costs = px.pie(
-                        values=list(selected_costs.values()),
-                        names=list(selected_costs.keys()),
-                        title=f"Distribution of Net Present Value Costs ({selected_year})", 
-                        color_discrete_sequence=['#1a1a1a', '#333333', '#4d4d4d', '#666666', '#808080', '#999999', '#b3b3b3']  # Distinct shades of grey
+                    cost_colors = ['#1a1a1a', '#333333', '#4d4d4d', '#666666', '#808080', '#999999', '#b3b3b3']
+                    fig_costs = create_pie_chart(
+                        selected_costs,
+                        f"Cumulative\nCosts\n({selected_year})",
+                        cost_colors
                     )
-                    fig_costs.update_traces(textposition='outside', textinfo='percent+label')
-                    fig_costs.update_layout(showlegend=False)
                     st.plotly_chart(fig_costs)
+
+                    fig_costs_bar = create_bar_chart(
+                        selected_costs,
+                        "Cumulative Contribution to Costs",
+                        'grey'
+                    )
+                    st.plotly_chart(fig_costs_bar)
 with tab4:
     if not st.session_state.get('calculations_done', False):
         st.warning('Please click "Submit" on Input Parameters tab')
