@@ -6,22 +6,27 @@ from streamlit.components import v1 as components
 import time
 import json
 import os
+import requests
+import copy
 
-read_local=True
+read_local = False
 if read_local:
-    city_default_data = pd.read_csv('../data/city_default_data.csv')
-    input_labels = pd.read_csv('../data/input_labels.csv')
-    definitions = pd.read_csv('../data/definitions.csv')
-    constants = pd.read_csv('../data/params.csv')
+    city_default_data = pd.read_csv('data/city_default_data.csv')
+    input_labels = pd.read_csv('data/input_labels.csv')
+    definitions = pd.read_csv('data/definitions.csv')
+    params = pd.read_csv('data/params.csv')
+    with open('sanopps/documentation.html', 'r') as f:
+        doc_content = f.read()
 else:
     city_default_data = pd.read_csv('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/city_default_data.csv')
     input_labels = pd.read_csv('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/input_labels.csv')
     definitions = pd.read_csv('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/definitions.csv')
-    constants = pd.read_csv("https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/params.csv", index_col="Indicator")
+    params = pd.read_csv("https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/params.csv")
+    doc_content = requests.get('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/sanopps/documentation.html').text
 
 
-# add constants to st.session_state
-for _, row in constants.iterrows():
+# add params to st.session_state
+for _, row in params.iterrows():
     if pd.notna(row['varname']): 
         st.session_state[row['varname']] = row['Value']
 
@@ -89,84 +94,99 @@ def load_config():
 with tab1:
     # Use container to force full height
     with st.container():
-        col1, col2 = st.columns([7,3], gap="large")
+        col1, col2 = st.columns([7.5,2.5], gap="medium")
         with col1:
             st.write("This interactive tool is designed to support policy-makers, researchers, and stakeholders in assessing the economic viability and social impact of Water, Sanitation, and Hygiene (WASH) initiatives. It provides a comprehensive analysis of the present and future costs and benefits associated with implementing WASH projects, and helps identify the highest value-generating investments.")
 
             st.subheader("Why use SanOpps?")
             st.write("SanOpps provides a localized understanding of a global trend: that investment in WASH drives economic growth. The dashboard lays out the return on investment potential for WASH in your city.")
 
+            st.image("data/sanopps_phases.png", use_container_width=True, width=100)
+
             st.subheader("SanOpps Features")
+            
+            # Render mermaid diagram with fixed height container
+            mermaid_code = """
+            classDiagram
+                direction TB
+                class Data_Inputs{
+                    Interactive input allows for
+                    customization of key variables,
+                    tailoring the analysis to 
+                    specific regions.
+                }
+                class Summary{
+                    Presents a table cumulative cost 
+                    and benefit values, broken down 
+                    every 10 years after the initial 
+                    investment.
+                }
+                class Dashboard{
+                    Presents adaptable data views for 
+                    cost and benefit figures, tracking 
+                    investments from the initial year 
+                    through a 30-year projection.
+                }
+                class Cost_Indicators{
+                    Captures cost of water supply
+                    systems, sanitation facilities,
+                    and sewage management.
+                }
+                class Benefit_Indicators{
+                    Captures benefits from improved
+                    health, productivity gains,
+                    convenience, and quality of life
+                }
+                Dashboard <|-- Cost_Indicators
+                Dashboard <|-- Benefit_Indicators
+                Data_Inputs --|> Summary
+                Summary --|> Dashboard
+            """
 
-            # Add vertical space before mermaid diagram
-            st.markdown("<br><br>", unsafe_allow_html=True)
-            # generating mermaid flowchart & class breakdown, using example from https://discuss.streamlit.io/t/st-markdown-does-not-render-mermaid-graphs/25576/9
-            def mermaid(code: str) -> None:
-                components.html(
-                    f"""
-                    <div style="display: flex; justify-content: center; align-items: center; min-height: 400px;">
-                        <pre class="mermaid" style="width: 100%; height: auto;">
-                            {code}
-                        </pre>
+            components.html(
+                f"""
+                <div style="height: 700px; overflow: visible;">
+                    <pre class="mermaid">
+                        {mermaid_code}
+                    </pre>
+                    <script type="module">
+                        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+                        mermaid.initialize({{ 
+                            startOnLoad: true,
+                            theme: 'neutral',
+                            flowchart: {{ htmlLabels: true }},
+                            fontSize: 18,
+                            securityLevel: 'loose'
+                        }});
+                    </script>
+                </div>
+                """,
+                height=700,
+            )
 
-                        <script type="module">
-                            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-                            mermaid.initialize({{ startOnLoad: true, theme: 'neutral', flowchart: {{ htmlLabels: true }}, fontSize: 18 }});
-                        </script>
-                    </div>
-                    """
-                )
+        with col2:
+            st.subheader("*What is Water, Sanitation, and Hygiene (WASH)?*", anchor=False, help=None)
+            st.image("data/sanopps_wash.png", use_container_width=True, width=100)
+            st.write("*WASH initiatives are aimed at improving access to clean Water, Sanitation, and Hygiene practices, particularly in low- and middle-income areas. Investing in WASH infrastructure is essential to improve public health, reduce poverty, promote equitable access to essential services, and enhance socio-economic development.*")
+    st.write("---")
+    st.subheader("Developers")
+    logo_col1, logo_col2, logo_col3 = st.columns(3)
+    
+    with logo_col1:
+        st.image("data/ecosan.jpeg", use_container_width=True, width=100)
+    
+    with logo_col2:
+        st.image("data/mit.png", use_container_width=True, width=100)
+        
+    with logo_col3:
+        st.image("data/wto.png", use_container_width=True, width=100)
 
-            mermaid("""
-                classDiagram
-                    direction TB
-                    class Data_Inputs{
-                        Interactive input allows for
-                        customization of key variables,
-                        tailoring the analysis to 
-                        specific regions.
-                    }
-                    class Summary{
-                        Presents a table cumulative cost 
-                        and benefit values, broken down 
-                        every 10 years after the initial 
-                        investment.
-                    }
-                    class Dashboard{
-                        Presents adaptable data views for 
-                        cost and benefit figures, tracking 
-                        investments from the initial year 
-                        through a 30-year projection.
-                    }
-                    class Cost_Indicators{
-                        Captures cost of water supply
-                        systems, sanitation facilities,
-                        and sewage management.
-                    }
-                    class Benefit_Indicators{
-                        Captures benefits from improved
-                        health, productivity gains,
-                        convenience, and quality of life
-                    }
-                    Dashboard <|-- Cost_Indicators
-                    Dashboard <|-- Benefit_Indicators
-                    Data_Inputs --|> Summary
-                    Summary --|> Dashboard
-                    
-            """)
-
-            # Add vertical space after mermaid diagram
-            st.markdown("<br><br>", unsafe_allow_html=True)
-    with col2:
-        st.subheader("What is Water, Sanitation, and Hygiene (WASH)?")
-        st.write("*WASH initiatives are aimed at improving access to clean Water, Sanitation, and Hygiene practices, particularly in low- and middle-income areas. Investing in WASH infrastructure is essential to improve public health, reduce poverty, promote equitable access to essential services, and enhance socio-economic development.*")
-
-    # Add "Next" button to go to Input Parameters tab, based on suggestions from mathcatsand https://discuss.streamlit.io/t/switch-tabs-programitically/37887/8
+    # Add "Next" button to go to Input Parameters tabs
     if st.button("Next: Input City Data"):
-        script_placeholder = st.empty() # placeholder
-        html(f"<script>{switch_tab(1)}</script>", height=0) # adding script to switch tab
-        time.sleep(0.1) # brief sleep for script to execute
-        script_placeholder.empty() # clear script
+        script_placeholder = st.empty()
+        html(f"<script>{switch_tab(1)}</script>", height=0)
+        time.sleep(0.1)
+        script_placeholder.empty()
 
 with tab2:
     st.markdown("""
@@ -299,120 +319,197 @@ with tab2:
         else:
             # Initialize lists to store results for each year
             years = list(range(st.session_state.current_year, 2061))
-            benefit_to_cost_ratios = []
-            results_data = []
-            state_snapshots = []  # Store state at each timestep
+            benefit_to_cost_ratios, results_data, state_snapshots = [], [], []
 
             # Calculate base values
-            percentage_slum_pop_current = (st.session_state.slum_pop / st.session_state.urban_pop) * 100
             gdp_per_capita = st.session_state.gdp / st.session_state.urban_pop
-            
-            # Pre-calculate arrays for all years
+            hourly_monetary_income = gdp_per_capita/(8*5*52) # 8 hours per day, 5 days per week, 52 weeks per year
+
+            # Population projections
             n_years = [(year - st.session_state.current_year) / 10 for year in years]
             pop_array = [st.session_state.urban_pop * (1 + st.session_state.growth_rate/100) ** n for n in n_years]
             
-            # Slum population array
-            percentage_slum_pop_array = [max(percentage_slum_pop_current - 10, 0) for _ in years]
-            slum_pop_array = [(pct / 100) * pop for pct, pop in zip(percentage_slum_pop_array, pop_array)]
-            
-            # Floating population array
-            percentage_floating_pop_current = (st.session_state.floating_pop / st.session_state.urban_pop) * 100
-            floating_pop_array = [(percentage_floating_pop_current / 100) * pop for pop in pop_array]
+            # Population arrays - slum population decreases by 10% by target year
+            percentage_slum_pop_current = st.session_state.slum_pop / st.session_state.urban_pop
+            percentage_floating_pop_current = st.session_state.floating_pop / st.session_state.urban_pop 
+            percentage_slum_pop_array = [max(percentage_slum_pop_current - 0.1, 0) for _ in years]
+            slum_pop_array = [pct * pop for pct, pop in zip(percentage_slum_pop_array, pop_array)]
+            floating_pop_array = [percentage_floating_pop_current * pop for pop in pop_array]
             
             # Households array
             household_ratio = st.session_state.urban_pop / st.session_state.urban_households
             urban_households_array = [pop / household_ratio for pop in pop_array]
             
-            # Water connections array
-            urban_households_tap_water_current = (st.session_state.tap_water_pct / 100) * st.session_state.urban_households
-            urban_households_fhtc_array = [households - urban_households_tap_water_current for households in urban_households_array]
+            # Water connections array - target 100% FHTC coverage
+            urban_households_tap_water_current = (st.session_state.tap_water_pct/100) * st.session_state.urban_households
+            urban_households_fhtc_array = [max(0, households - urban_households_tap_water_current) for households in urban_households_array]
+
+            # Toilet calculations - 30 persons per WC as per SBM 2.0
+            wc_ct_array = [slum_pop / st.session_state.persons_per_wc_ct for slum_pop in slum_pop_array]
+            wc_pt_array = [floating_pop / st.session_state.persons_per_wc_pt for floating_pop in floating_pop_array]
+            additional_wc_ct_array = [max(0, wc_ct - st.session_state.comm_toilets * 20) for wc_ct in wc_ct_array] # Assuming 20 WCs per CT block
+            additional_wc_pt_array = [max(0, wc_pt - st.session_state.public_toilets * 20) for wc_pt in wc_pt_array]
+
+            # Sewer calculations array - maintain current coverage %
+            pop_connected_sewer_array = [(st.session_state.current_sewer_pop/100) * pop for pop in pop_array]
+            sewer_length_per_person = st.session_state.sewer_length / ((st.session_state.current_sewer_pop/100) * st.session_state.urban_pop)
+            sewer_network_array = [(pop * sewer_length_per_person) / 1000 for pop in pop_connected_sewer_array] # Convert m to km
+            gap_sewer_network_array = [max(0, network - st.session_state.sewer_length) for network in sewer_network_array]
             
-            # Sewer calculations array
-            pop_connected_sewer_current = (st.session_state.current_sewer_pop / 100) * st.session_state.urban_pop
-            length_sewer_per_person = (st.session_state.sewer_length * 1000) / pop_connected_sewer_current
-            pop_connected_sewer_array = [(st.session_state.projected_sewer_pop / 100) * pop for pop in pop_array]
-            sewer_network_array = [(length_sewer_per_person * pop) / 1000 for pop in pop_connected_sewer_array]
-            gap_sewer_network_array = [network - st.session_state.sewer_length for network in sewer_network_array]
-            
-            # Treatment capacity array
+            # Treatment capacity array - 80% of water consumption becomes sewage
             sewage_generated_array = [0.8 * pop * st.session_state.water_consumption / 1000000 for pop in pop_connected_sewer_array]
             gap_treatment_capacity_array = [max(0, sewage - st.session_state.stp_capacity) for sewage in sewage_generated_array]
             
             # FSTP calculations array
-            households_septic_tanks_array = [households * (1 - st.session_state.projected_sewer_pop / 100) for households in urban_households_array]
-            septage_treated_per_day_array = [households * st.session_state.septage_emptied_per_household / (st.session_state.desludging_frequency * 300) 
-                                           for households in households_septic_tanks_array]
+            households_septic_tanks_array = [households * (1 - st.session_state.current_sewer_pop/100) for households in urban_households_array]
+            septage_treated_per_day_array = [(households * st.session_state.septage_emptied_per_household) / (st.session_state.desludging_frequency * 300) for households in households_septic_tanks_array] # 3KL per household, 10 year desludging, 300 working days
+
+            # Initialize component dictionaries
+            cost_components = {
+                'Water Supply': 0,
+                'Toilets': 0,
+                'Sewer': 0,
+                'STP': 0, 
+                'FSTP': 0,
+                'Training': 0
+            }
+            benefit_components = {
+                'Health Benefits': 0,
+                'Productivity Benefits': 0,
+                'Time Saved Benefits': 0,
+                'Recycled Water Benefits': 0,
+                'Tourism Benefits': 0
+            }
+            cumulative_benefit_components = copy.deepcopy(benefit_components)
+            cumulative_cost_components = copy.deepcopy(cost_components)
+            cumulative_present_value_total_cost = 0
+            cumulative_present_value_total_benefit = 0
 
             # Loop through years for cost-benefit calculations
             for i, year in enumerate(years):
                 present_value_total_cost = 0
                 present_value_total_benefits = 0
+                discount_factor = 1 / ((1 + st.session_state.discount_rate/100) ** (year - st.session_state.current_year))
 
                 # Add capital costs only in investment year
                 if year == st.session_state.investment_year:
                     # Water supply capital costs
-                    capital_cost_piped_water = urban_households_fhtc_array[i] * st.session_state.fhtc_cost
+                    capital_cost_piped_water = max(0, urban_households_fhtc_array[i] * st.session_state.fhtc_cost)
                     
                     # Toilet capital costs
-                    wc_ct = slum_pop_array[i] / st.session_state.persons_per_wc_ct
-                    additional_wc_ct = wc_ct - st.session_state.comm_toilets
-                    total_capital_cost_wc_ct = additional_wc_ct * st.session_state.comm_toilet_cost
-
-                    wc_pt = floating_pop_array[i] / st.session_state.persons_per_wc_pt
-                    additional_wc_pt = wc_pt - st.session_state.public_toilets
-                    total_capital_cost_wc_pt = additional_wc_pt * st.session_state.public_toilet_cost
-
+                    total_capital_cost_wc_ct = max(0, additional_wc_ct_array[i] * st.session_state.capital_cost_wc_ct)
+                    total_capital_cost_wc_pt = max(0, additional_wc_pt_array[i] * st.session_state.capital_cost_wc_pt)
                     # Sewer and treatment capital costs
-                    capital_cost_sewer_network = gap_sewer_network_array[i] * st.session_state.sewer_const_cost
-                    capital_cost_additional_stp = gap_treatment_capacity_array[i] * st.session_state.stp_cost
-                    cost_fstp_total = septage_treated_per_day_array[i] * st.session_state.fstp_cost
+                    # Determine sewer length per person based on population
+                    if pop_array[i] <= 20000:
+                        sewer_length_per_person = st.session_state.sewer_length_small
+                    elif pop_array[i] <= 100000:
+                        sewer_length_per_person = st.session_state.sewer_length_medium
+                    else:
+                        sewer_length_per_person = st.session_state.sewer_length_large
+                        
+                    # Recalculate sewer network array with new length per person
+                    sewer_network = (pop_connected_sewer_array[i] * sewer_length_per_person) / 1000 # Convert m to km
+                    gap_sewer_network = max(0, sewer_network - st.session_state.sewer_length)
+                    capital_cost_sewer_network = max(0, gap_sewer_network * st.session_state.cost_sewer_network)
+                    capital_cost_additional_stp = max(0, gap_treatment_capacity_array[i] * st.session_state.stp_cost)
+                    
+                    # FSTP costs
+                    if st.session_state.co_treat_avail == "NO":
+                        cost_fstp_total = max(0, septage_treated_per_day_array[i] * st.session_state.cost_fstp) / 1000
+                    else:
+                        cost_fstp_total = max(0, septage_treated_per_day_array[i] * st.session_state.cost_co_treatment) / 1000
 
                     # Training costs
-                    officials_capacity_building = (st.session_state.ulb_officials_trained / 100) * pop_array[i]
-                    total_annual_cost_capacity_building = officials_capacity_building * st.session_state.training_cost
-                    total_awareness_cost = pop_array[i] * st.session_state.awareness_cost
-                    total_training_outreach_cost = total_annual_cost_capacity_building + total_awareness_cost
+                    officials_capacity_building = (st.session_state.percent_ulb_officials_trained/100) * pop_array[i]
+                    total_annual_cost_capacity_building = max(0, officials_capacity_building * st.session_state.annual_cost_capacity_building)
 
-                    # Sum all capital costs
+                    # Awareness costs
+                    total_awareness_cost = max(0, pop_array[i] * st.session_state.awareness_cost)
+                    total_training_outreach_cost = max(0, total_annual_cost_capacity_building + total_awareness_cost)
+
                     present_value_total_cost = (
                         capital_cost_piped_water + total_capital_cost_wc_ct + total_capital_cost_wc_pt +
                         capital_cost_sewer_network + capital_cost_additional_stp + cost_fstp_total +
                         total_training_outreach_cost
-                    ) / ((1 + st.session_state.discount_rate/100) ** (year - st.session_state.current_year))
+                    ) * discount_factor
+
+                    cumulative_present_value_total_cost = present_value_total_cost
 
                 # Add operating costs and benefits after investment year
                 elif year > st.session_state.investment_year:
                     # Operating costs
-                    annual_maint_sewer_network_total = gap_sewer_network_array[i] * st.session_state.sewer_maint_cost
-                    annual_maint_stp_total = gap_treatment_capacity_array[i] * st.session_state.stp_maint_cost
-                    annual_maint_fstp_total = septage_treated_per_day_array[i] * st.session_state.fstp_maint_cost
+                    annual_maint_sewer_network_total = max(0, gap_sewer_network_array[i] * st.session_state.sewer_maint_cost)
+                    annual_maint_stp_total = max(0, gap_treatment_capacity_array[i] * st.session_state.stp_maint_cost)
+                    annual_maint_fstp_total = max(0, septage_treated_per_day_array[i] * st.session_state.fstp_maint_cost) / 1000
+                    
+                    discount_factor = 1 / ((1 + st.session_state.discount_rate/100) ** (year - st.session_state.current_year))
                     
                     present_value_total_cost = (
                         annual_maint_sewer_network_total + annual_maint_stp_total + 
                         annual_maint_fstp_total + total_training_outreach_cost
-                    ) / ((1 + st.session_state.discount_rate/100) ** (year - st.session_state.current_year))
+                    ) * discount_factor
 
-                    # Calculate individual benefit components
-                    health_benefits = (st.session_state.disease_incidence * st.session_state.treatment_cost) + \
-                                    (st.session_state.disease_incidence * st.session_state.transport_cost)
-                    productivity_benefits = gdp_per_capita * st.session_state.working_age_pop / 100 * 5 * 8
-                    recycled_water_benefits = st.session_state.recycled_water_value * sewage_generated_array[i] * 365 * 1000
-                    tourism_benefits = st.session_state.tourism_contribution / 100 * gdp_per_capita * pop_array[i]
+                    # Store cost components
+                    cost_components = {
+                        'Water Supply': max(0, capital_cost_piped_water * discount_factor if year == st.session_state.investment_year else 0),
+                        'Toilets': max(0, (total_capital_cost_wc_ct + total_capital_cost_wc_pt) * discount_factor if year == st.session_state.investment_year else 0),
+                        'Sewer': max(0, (capital_cost_sewer_network * discount_factor if year == st.session_state.investment_year else 0) + annual_maint_sewer_network_total * discount_factor),
+                        'STP': max(0, (capital_cost_additional_stp * discount_factor if year == st.session_state.investment_year else 0) + annual_maint_stp_total * discount_factor),
+                        'FSTP': max(0, (cost_fstp_total * discount_factor if year == st.session_state.investment_year else 0) + annual_maint_fstp_total * discount_factor),
+                        'Training': max(0, total_training_outreach_cost * discount_factor)
+                    }
 
-                    # Calculate present value of benefits
-                    discount_factor = 1 / ((1 + st.session_state.discount_rate/100) ** (year - st.session_state.current_year))
-                    present_value_total_benefits = (health_benefits + productivity_benefits + recycled_water_benefits + tourism_benefits) * discount_factor
+                    # Calculate benefits
+                    # Health benefits - reduced to be more conservative
+                    health_benefits = st.session_state.disease_incidence * (st.session_state.cost_per_visit + st.session_state.commute_cost_doctor) * 0.6
+                    
+                    # Productivity benefits - 5 days lost per case
+                    working_age_ratio = st.session_state.working_age_pop / 100
+                    productivity_benefits_working = hourly_monetary_income * working_age_ratio * 5 * 8 * pop_array[i] * 0.6
+                    productivity_benefits_nonworking = hourly_monetary_income * (1 - working_age_ratio) * 5 * 8 * 0.15 * pop_array[i]
+                    
+                    # Time saved benefits
+                    time_saved_working = hourly_monetary_income * working_age_ratio * 0.6 * (
+                        st.session_state.water_collection_time * urban_households_array[i] + 
+                        st.session_state.sanitation_access_saved * pop_array[i]
+                    )
+                    time_saved_nonworking = hourly_monetary_income * (1 - working_age_ratio) * 0.15 * (
+                        st.session_state.water_collection_time * urban_households_array[i] + 
+                        st.session_state.sanitation_access_saved * pop_array[i]
+                    )
+                    
+                    # Recycled water benefits - 20% reuse
+                    recycled_water_benefits = st.session_state.wastewater_reuse_pct/100 * sewage_generated_array[i] * 365 * 1000 * st.session_state.treated_water_price
+                    
+                    # Tourism benefits - 10% GDP increase from improved sanitation
+                    tourism_benefits = 0.091 * gdp_per_capita * pop_array[i] * 0.1
 
-                    # Store benefit components for pie chart
+                    present_value_total_benefits = (
+                        health_benefits + productivity_benefits_working + productivity_benefits_nonworking + 
+                        time_saved_working + time_saved_nonworking + recycled_water_benefits + tourism_benefits
+                    ) * discount_factor
+
+                    # Store benefit components
                     benefit_components = {
                         'Health Benefits': health_benefits * discount_factor,
-                        'Productivity Benefits': productivity_benefits * discount_factor,
+                        'Productivity Benefits': (productivity_benefits_working + productivity_benefits_nonworking) * discount_factor,
+                        'Time Saved Benefits': (time_saved_working + time_saved_nonworking) * discount_factor,
                         'Recycled Water Benefits': recycled_water_benefits * discount_factor,
                         'Tourism Benefits': tourism_benefits * discount_factor
                     }
 
-                # Calculate benefit-to-cost ratio (avoid division by zero)
-                benefit_to_cost_ratio = present_value_total_benefits / present_value_total_cost if present_value_total_cost != 0 else 0
+                    # Update cumulative values
+                    for key in cost_components:
+                        cumulative_cost_components[key] += cost_components[key]
+                    for key in benefit_components:
+                        cumulative_benefit_components[key] += benefit_components[key]
+
+                    cumulative_present_value_total_cost += present_value_total_cost
+                    cumulative_present_value_total_benefit += present_value_total_benefits
+
+                # Calculate benefit-to-cost ratio
+                benefit_to_cost_ratio = cumulative_present_value_total_benefit / cumulative_present_value_total_cost if cumulative_present_value_total_cost != 0 else 0
 
                 # Store state snapshot
                 state_snapshot = {
@@ -421,8 +518,14 @@ with tab2:
                     'floating_pop_in_target_year': floating_pop_array[i],
                     'urban_households_in_target_year': urban_households_array[i],
                     'sewage_generated_in_target_year': sewage_generated_array[i],
-                    'benefit_components': benefit_components if year > st.session_state.investment_year else None,
-                    'year': year
+                    'benefit_components': benefit_components.copy() if year > st.session_state.investment_year else None,
+                    'cost_components': cost_components.copy() if year > st.session_state.investment_year else None,
+                    'cumulative_benefit': cumulative_present_value_total_benefit,
+                    'cumulative_cost': cumulative_present_value_total_cost,
+                    'cumulative_benefit_components': cumulative_benefit_components.copy() if year > st.session_state.investment_year else None,
+                    'cumulative_cost_components': cumulative_cost_components.copy() if year > st.session_state.investment_year else None,
+                    'year': year,
+                    'benefit_to_cost_ratio': benefit_to_cost_ratio
                 }
                 state_snapshots.append(state_snapshot)
 
@@ -430,13 +533,18 @@ with tab2:
                 results_data.append({
                     "Year": year,
                     "Benefit-to-Cost Ratio": benefit_to_cost_ratio,
-                    "Benefits_Per_Person": present_value_total_benefits / st.session_state.urban_pop,
-                    "Costs_Per_Person": present_value_total_cost / st.session_state.urban_pop,
-                    "Total_Benefits": present_value_total_benefits,
-                    "Total_Costs": present_value_total_cost
+                    "Benefits_Per_Person": present_value_total_benefits / st.session_state.urban_pop if present_value_total_benefits > 0 else 0,
+                    "Costs_Per_Person": present_value_total_cost / st.session_state.urban_pop if present_value_total_cost > 0 else 0,
+                    "Total_Benefit": present_value_total_benefits,
+                    "Total_Costs": present_value_total_cost,
+                    "Cumulative_Total_Benefit": cumulative_present_value_total_benefit,
+                    "Cumulative_Total_Cost": cumulative_present_value_total_cost,
+                    "Cumulative_Benefits_Per_Person": cumulative_present_value_total_benefit / st.session_state.urban_pop if cumulative_present_value_total_benefit > 0 else 0,
+                    "Cumulative_Costs_Per_Person": cumulative_present_value_total_cost / st.session_state.urban_pop if cumulative_present_value_total_cost > 0 else 0,
+                    "Benefit_to_Cost_Ratio": benefit_to_cost_ratio
                 })
 
-            # Create DataFrame from results
+            # Create DataFrame from results and ensure all columns exist
             st.session_state.results_df = pd.DataFrame(results_data)
             st.session_state.state_snapshots = state_snapshots
             st.session_state.calculations_done = True
@@ -446,15 +554,25 @@ with tab2:
             html(f"<script>{switch_tab(2)}</script>", height=0)
             time.sleep(0.1)
             script_placeholder.empty()
-
 with tab3:
     if not st.session_state.get('calculations_done', False):
         st.warning('Please click "Submit" on Input Parameters tab')
     else:
         st.subheader("Dashboard")
+
+        # Add dropdown for value type selection
+        value_type = st.selectbox(
+            "Select value type",
+            ["City-wide values", "Per capita values"],
+            index=0
+        )
+        show_per_capita = value_type == "Per capita values"
         
         # Create figure with secondary y-axis
-        fig = px.line(st.session_state.results_df, x="Year", y=["Benefits_Per_Person", "Costs_Per_Person"])
+        if show_per_capita:
+            fig = px.line(st.session_state.results_df, x="Year", y=["Cumulative_Benefits_Per_Person", "Cumulative_Costs_Per_Person"])
+        else:
+            fig = px.line(st.session_state.results_df, x="Year", y=["Cumulative_Total_Benefit", "Cumulative_Total_Cost"])
         
         # Add benefit-to-cost ratio on secondary y-axis
         fig.add_scatter(x=st.session_state.results_df["Year"], 
@@ -466,7 +584,7 @@ with tab3:
         fig.update_layout(
             title="Return on WASH Investment",
             xaxis_title="Year",
-            yaxis_title=f"{st.session_state.currency}/person",
+            yaxis_title=f"{st.session_state.currency}/person" if show_per_capita else st.session_state.currency,
             yaxis2=dict(
                 title="Benefit-to-Cost Ratio",
                 overlaying="y",
@@ -480,8 +598,8 @@ with tab3:
         )
 
         # Update line colors and add markers
-        fig.data[0].update(line_color='green', name='Benefits', mode='lines+markers')  # Benefits line
-        fig.data[1].update(line_color='grey', name='Costs', mode='lines+markers')      # Costs line
+        fig.data[0].update(line_color='green', name='Cumulative Benefits', mode='lines+markers')  # Benefits line
+        fig.data[1].update(line_color='grey', name='Cumulative Costs', mode='lines+markers')      # Costs line
         fig.data[2].update(line_color='blue', mode='lines+markers')                    # Ratio line
         st.plotly_chart(fig)
 
@@ -508,8 +626,8 @@ with tab3:
                 selected_benefits = None
                 for snapshot in st.session_state.state_snapshots:
                     print(snapshot.keys())
-                    if snapshot['year'] == selected_year and snapshot.get('benefit_components'):
-                        selected_benefits = snapshot['benefit_components']
+                    if snapshot['year'] == selected_year and snapshot.get('cumulative_benefit_components'):
+                        selected_benefits = snapshot['cumulative_benefit_components']
                         break
                 
                 if selected_benefits:
@@ -539,13 +657,19 @@ with tab3:
                     )
                     fig_costs.update_traces(textposition='inside', textinfo='percent+label')
                     st.plotly_chart(fig_costs)
-
+                    
 with tab4:
     if not st.session_state.get('calculations_done', False):
         st.warning('Please click "Submit" on Input Parameters tab')
     else:
-        # Add toggle for absolute vs per capita values
-        show_per_capita = st.checkbox("Show per capita values", value=False)
+        # Add dropdown for value type selection
+        value_type_2 = st.selectbox(
+            "Select value type",
+            ["City-wide values", "Per capita values"],
+            index=0,
+            key="summary_value_type"  # Added unique key
+        )
+        show_per_capita_2 = value_type_2 == "Per capita values"
         
         # Create summary data using the stored results
         summary_years = [2030, 2040, 2050, 2060]
@@ -559,7 +683,7 @@ with tab4:
             if not year_rows.empty:
                 year_data = year_rows.iloc[0]
                 
-                if show_per_capita:
+                if show_per_capita_2:
                     row = {
                         'Year': year,
                         'Benefits': year_data['Benefits_Per_Person'],
@@ -569,8 +693,8 @@ with tab4:
                 else:
                     row = {
                         'Year': year,
-                        'Benefits': year_data['Total_Benefits'],
-                        'Costs': year_data['Total_Costs'],
+                        'Benefits': year_data['Cumulative_Total_Benefit'],
+                        'Costs': year_data['Cumulative_Total_Cost'],
                         'Ratio': year_data['Benefit-to-Cost Ratio']
                     }
                 summary_data.append(row)
@@ -591,10 +715,6 @@ with tab4:
 
 with tab5:
     st.write("### Sanitation Variables Glossary")
-    
-    # Import documentation.html
-    with open('documentation.html', 'r') as f:
-        doc_content = f.read()
         
     # Display HTML content directly using streamlit components
     components.html(doc_content, height=1200, scrolling=True)

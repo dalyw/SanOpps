@@ -21,9 +21,19 @@ Septage emptied per household during desludging of septic tank,septage_emptied_p
 Cost of co treatment facility at STP,cost_co_treatment,100000,INR per KL
 Cost of FSTP,cost_fstp,350000,INR per KL
 Total annual maintenance cost of FSTP,fstp_maintenance_cost,50000,INR per KLD
-ULB officials to be trained within Population,ulb_officials_trained,10,%
+ULB officials to be trained within Population,percent_ulb_officials_trained,0.1,%
 Annual Cost of capacity building per person(projected),annual_cost_capacity_building,10000,INR,
 Annual cost of public awareness campaign per person (projected),awareness_cost,25,INR,
 Discount Rate,discount_rate,6,%,
 Time saved from water collection time,water_collection_time,1,HR/Household-Day,EcoSan
-Time saved from water colelction,water_collection_saved,0.5,HR/Person-Day,EcoSan
+Time saved from water collection (adjusted by FHTC proportion),water_collection_saved,2,HR/Household-Day,EcoSan
+Household size,household_size,4,person,EcoSan
+Time saved from sanitation access (adjusted by CT proportion),sanitation_access_saved,0.5,HR/Person-Day,EcoSan
+Sewer network length per person (pop <= 20000),sewer_length_small,3,m/person,EcoSan
+Sewer network length per person (20000 < pop <= 100000),sewer_length_medium,2,m/person,EcoSan
+Sewer network length per person (pop > 100000),sewer_length_large,1,m/person,EcoSan
+Cost of commute to doctor,commute_cost_doctor,50,INR,EcoSan
+Cost per doctor visit,cost_per_visit,3000,INR,EcoSan
+Percentage of treated wastewater reused,wastewater_reuse_pct,20,%,Government policy
+Price of treated wastewater,treated_water_price,15,INR/KL,Market rate
+
