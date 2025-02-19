@@ -35,10 +35,16 @@ else:
 for _, row in params.iterrows():
     if pd.notna(row['varname']): 
         st.session_state[row['varname']] = row['value']
-
 st.title("SanOpps: The WASH Cost-Benefit Analysis Tool for Local Government")
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Home Page", "Input Parameters", "Dashboard", "Summary", "Definitions", "Help"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "Home Page",
+    "Data Input",
+    "Dashboard",
+    "Summary", 
+    "Definitions",
+    "Help"
+])
 
 # Initialize session state for calculations
 initialize_session_state(['calculations_done', 'results_df', 'summary_data'], [False, None, None])
@@ -58,7 +64,7 @@ def generate_inputs(input_labels, category, input_type):
     }
     
     for _, row in inputs.iterrows():
-        name_col, input_col, units_col, percent_col = st.columns([1, 1, 1, 1])
+        name_col, input_col, units_col, percent_col = st.columns([1.2, 1.1, 1.0, 0.7])
         with name_col:
             st.write(row['label'])
         with input_col:
@@ -66,12 +72,12 @@ def generate_inputs(input_labels, category, input_type):
             if key not in st.session_state:
                 default_value = float(row['default_value']) if row['value_type'] == 'float' else int(row['default_value']) if row['value_type'] == 'int' else str(row['default_value'])
                 st.session_state[key] = default_value
-                if pd.notna(row['percent_option']):
+                if pd.notna(row['percent_option']): 
                     st.session_state[key+"_percent"] = default_value/st.session_state.get(row['percent_option'], 1)*100 if row['unit'] != '%' else default_value
             
             if key in ['currency', 'co_treat_avail', 'fstp_avail', 'co_treat_proposed']:
                 options = ["INR", "USD", "EUR"] if key == 'currency' else ["NO", "YES"]
-                selected = st.selectbox("", options, key=f"select_{key}", label_visibility="collapsed")
+                selected = st.selectbox(f"select_{key}", options, key=f"select_{key}", label_visibility="collapsed")
                 if key == 'currency' and selected != st.session_state.get('prev_currency'):
                     # Convert all monetary values when currency changes
                     if 'prev_currency' in st.session_state:
@@ -93,7 +99,7 @@ def generate_inputs(input_labels, category, input_type):
                     percent_toggle = st.session_state.get(f"{key}_percent_toggle", row['unit'] == '%')
                     if percent_toggle:
                         value = st.number_input(
-                            "",
+                            f"percent_{key}",
                             value=st.session_state[key+"_percent"],
                             label_visibility="collapsed",
                             key=f"percent_{key}"
@@ -101,16 +107,23 @@ def generate_inputs(input_labels, category, input_type):
                         st.session_state[key+"_percent"] = value
                         st.session_state[key] = value * st.session_state.get(row['percent_option'], 0) / 100 if row['unit'] != '%' else value
                     else:
-                        value = st.number_input("", value=st.session_state[key], label_visibility="collapsed", key=f"direct_{key}")
+                        value = st.number_input(f"direct_{key}", value=st.session_state[key], label_visibility="collapsed", key=f"direct_{key}")
                         st.session_state[key] = value
                         st.session_state[key+"_percent"] = value/st.session_state.get(row['percent_option'], 1)*100
                 else:
-                    value = st.number_input("", value=st.session_state[key], label_visibility="collapsed", key=f"input_{key}")
+                    value = st.number_input(f"input_{key}", value=st.session_state[key], label_visibility="collapsed", key=f"input_{key}")
                     st.session_state[key] = value
         with units_col:
             if pd.notna(row['percent_option']):
                 if st.session_state.get(f"{key}_percent_toggle", row['unit'] == '%'):
-                    st.write(f"% of {row['percent_option']}")
+                    # Get the label for the percent option, with error handling
+                    matching_rows = input_labels[input_labels['key'] == row['percent_option']]
+                    print(matching_rows)
+                    if not matching_rows.empty:
+                        percent_option_label = matching_rows.iloc[0]['label']
+                    else:
+                        percent_option_label = row['percent_option']
+                    st.write(f"% of {percent_option_label}")
                 else:
                     # Get the unit of the referenced variable
                     ref_var = input_labels[input_labels['key'] == row['percent_option']]
@@ -174,78 +187,82 @@ with tab1:
     with st.container():
         col1, col2 = st.columns([7.5,2.5], gap="medium")
         with col1:
-            st.write("This interactive tool is designed to support policy-makers, researchers, and stakeholders in assessing the economic viability and social impact of Water, Sanitation, and Hygiene (WASH) initiatives. It provides a comprehensive analysis of the present and future costs and benefits associated with implementing WASH projects, and helps identify the highest value-generating investments.")
+            st.write("This tool is designed to support policy-makers, researchers, and nonprofits assess the economic viability and social impact of Water, Sanitation, and Hygiene (WASH) initiatives. It provides a comprehensive analysis of the present and future costs and benefits associated with WASH projects, and helps identify the highest value-generating investments.")
 
             st.subheader("Why use SanOpps?")
             st.write("SanOpps provides a localized understanding of a global trend: that investment in WASH drives economic growth. The dashboard lays out the return on investment potential for WASH in your city.")
 
             st.image("data/sanopps_phases.png", use_container_width=True, width=100)
 
-            st.subheader("SanOpps Features")
-            
-            # Render mermaid diagram with fixed height container
-            mermaid_code = """
-            classDiagram
-                direction TB
-                class Data_Inputs{
-                    Interactive input allows for
-                    customization of key variables,
-                    tailoring the analysis to 
-                    specific regions.
-                }
-                class Summary{
-                    Presents a table cumulative cost 
-                    and benefit values, broken down 
-                    every 10 years after the initial 
-                    investment.
-                }
-                class Dashboard{
-                    Presents adaptable data views for 
-                    cost and benefit figures, tracking 
-                    investments from the initial year 
-                    through a 30-year projection.
-                }
-                class Cost_Indicators{
-                    Captures cost of water supply
-                    systems, sanitation facilities,
-                    and sewage management.
-                }
-                class Benefit_Indicators{
-                    Captures benefits from improved
-                    health, productivity gains,
-                    convenience, and quality of life
-                }
-                Dashboard <|-- Cost_Indicators
-                Dashboard <|-- Benefit_Indicators
-                Data_Inputs --|> Summary
-                Summary --|> Dashboard
-            """
-
-            components.html(
-                f"""
-                <div style="height: 700px; overflow: visible;">
-                    <pre class="mermaid">
-                        {mermaid_code}
-                    </pre>
-                    <script type="module">
-                        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-                        mermaid.initialize({{ 
-                            startOnLoad: true,
-                            theme: 'neutral',
-                            flowchart: {{ htmlLabels: true }},
-                            fontSize: 18,
-                            securityLevel: 'loose'
-                        }});
-                    </script>
-                </div>
-                """,
-                height=700,
-            )
-
         with col2:
-            st.subheader("*What is Water, Sanitation, and Hygiene (WASH)?*", anchor=False, help=None)
+            st.markdown("#### *What is WASH?*")
             st.image("data/sanopps_wash.png", use_container_width=True, width=100)
-            st.write("*WASH initiatives are aimed at improving access to clean Water, Sanitation, and Hygiene practices, particularly in low- and middle-income areas. Investing in WASH infrastructure is essential to improve public health, reduce poverty, promote equitable access to essential services, and enhance socio-economic development.*")
+            st.write("<small>*WASH initiatives improve access to clean Water, Sanitation, and Hygiene practices, particularly in low- and middle-income areas. Investing in WASH infrastructure is essential to improve public health, reduce poverty, promote equitable access to essential services, and enhance socio-economic development.*</small>", unsafe_allow_html=True)
+    
+        st.subheader("SanOpps Features")
+        # Render mermaid diagram with fixed height container
+        mermaid_code = """
+        classDiagram
+            direction LR
+            class Cost_Indicators{
+                Cost of water supply, 
+                sanitation facilities,
+                and sewage management.
+            }
+            class Benefit_Indicators{
+                Benefits from improved
+                health, productivity,
+                convenience, and 
+                quality of life
+            }
+            class Data_Inputs{
+                Interactive input for key
+                variables, tailoring the 
+                analysis to your region.
+            }
+            class Summary{
+                Table of cumulative cost and
+                benefit values, broken down
+                every 5 years after the 
+                initial investment.
+            }
+            class Dashboard{
+                Adaptable data views for cost
+                and benefit figures, tracking 
+                investments through a 30-year 
+                projection.
+            }
+            Cost_Indicators --> Summary
+            Data_Inputs --> Summary
+            Benefit_Indicators --> Summary
+            Summary --> Dashboard
+            %%{init: {'theme':'neutral', 'themeVariables': {'classBorder':'#9370DB', 'classText':'#000000', 'classFill':'#E6E6FA'}}}%%
+            style Data_Inputs fill:#800080,color:#fff
+            style Summary fill:#008000,color:#fff
+            style Dashboard fill:#808080,color:#fff
+        """
+
+        components.html(
+            f"""
+            <div style="height: 500px; overflow: visible;">
+                <pre class="mermaid">
+                    {mermaid_code}
+                </pre>
+                <script type="module">
+                    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+                    mermaid.initialize({{ 
+                        startOnLoad: true,
+                        theme: 'neutral',
+                        flowchart: {{ htmlLabels: true }},
+                        fontSize: 18,
+                        securityLevel: 'loose'
+                    }});
+                </script>
+            </div>
+            """,
+            height=500,
+        )
+
     st.write("---")
     st.subheader("Developers")
     logo_col1, logo_col2, logo_col3 = st.columns(3)
@@ -375,9 +392,9 @@ with tab2:
                 'Community Toilets', 
                 'Public Toilets',
                 'Sewer',
-                'STP',
+                'Sewage Treatment Plant',
                 'Fecal Sludge Treatment Plant',
-                'Training',
+                'Training Officials',
                 'Public Awareness'
             ], 0)
 
@@ -466,9 +483,9 @@ with tab2:
                         'Community Toilets': max(0, total_capital_cost_ct * discount_factor if year == st.session_state.investment_year else 0),
                         'Public Toilets': max(0, total_capital_cost_pt * discount_factor if year == st.session_state.investment_year else 0),
                         'Sewer': max(0, (capital_cost_sewer_network * discount_factor if year == st.session_state.investment_year else 0) + annual_maint_sewer_network_total * discount_factor),
-                        'STP': max(0, (capital_cost_additional_stp * discount_factor if year == st.session_state.investment_year else 0) + annual_maint_stp_total * discount_factor),
+                        'Sewage Treatment Plant': max(0, (capital_cost_additional_stp * discount_factor if year == st.session_state.investment_year else 0) + annual_maint_stp_total * discount_factor),
                         'Fecal Sludge Treatment Plant': max(0, (cost_fstp_total * discount_factor if year == st.session_state.investment_year else 0) + annual_maint_fstp_total * discount_factor),
-                        'Training': max(0, total_annual_cost_capacity_building * discount_factor),
+                        'Training Officials': max(0, total_annual_cost_capacity_building * discount_factor),
                         'Public Awareness': total_awareness_cost * discount_factor
                     }
 
@@ -575,7 +592,7 @@ with tab3:
 
         # Add dropdown for value type selection
         value_type = st.selectbox(
-            "Select value type",
+            "Select value type", 
             ["City-wide values", "Per capita values"],
             index=0
         )
@@ -593,27 +610,117 @@ with tab3:
                     name="Benefit-to-Cost Ratio",
                     yaxis="y2")
 
+        # Find intersection year where benefits exceed costs
+        df = st.session_state.results_df
+        if show_per_capita:
+            benefits = df["Cumulative_Benefits_Per_Person"]
+            costs = df["Cumulative_Costs_Per_Person"]
+        else:
+            benefits = df["Cumulative_Total_Benefit"] 
+            costs = df["Cumulative_Total_Cost"]
+            
+        # Find first year where benefits exceed costs
+        intersection_year = None
+        for i in range(len(df)):
+            if benefits.iloc[i] >= costs.iloc[i] and benefits.iloc[i] > 0 and costs.iloc[i] > 0:
+                intersection_year = df["Year"].iloc[i]
+                break
+                
+        if intersection_year:
+            # Add vertical line at intersection that stops at 0
+            fig.add_shape(
+                type="line",
+                x0=intersection_year,
+                x1=intersection_year,
+                y0=0,
+                y1=1,
+                yref="paper",
+                line=dict(color="black")
+            )
+            
+            # Add annotation for ROI years
+            roi_years = intersection_year - st.session_state.investment_year
+            fig.add_annotation(
+                x=intersection_year + 4,
+                y=0.8,
+                yref="paper",
+                text=f"{roi_years}-year ROI",
+                showarrow=False,
+                font=dict(color='black', size=16)
+            )
+
         # Update layout with secondary y-axis and styling
         fig.update_layout(
-            title="Return on WASH Investment",
-            xaxis_title="Year",
-            yaxis_title=f"{st.session_state.currency}/person" if show_per_capita else st.session_state.currency,
+            title=dict(
+                text="Return on WASH Investment",
+                font=dict(size=24)
+            ),
+            xaxis_title=dict(
+                text="Year",
+                font=dict(size=18)
+            ),
+            yaxis_title=dict(
+                text=f"{st.session_state.currency}/person" if show_per_capita else st.session_state.currency,
+                font=dict(size=18)
+            ),
             yaxis2=dict(
-                title="Benefit-to-Cost Ratio",
+                title=dict(
+                    text="Benefit-to-Cost Ratio",
+                    font=dict(size=18)
+                ),
                 overlaying="y",
-                side="right"
+                side="right",
+                showgrid=False,
+                tickfont=dict(size=14)
+            ),
+            yaxis=dict(
+                showgrid=True,
+                gridcolor='lightgrey',
+                tickfont=dict(size=14)
             ),
             xaxis=dict(
-                dtick=10  # Set x-axis tick interval to 10 years
+                dtick=10,  # Set x-axis tick interval to 10 years
+                showgrid=False,
+                tickfont=dict(size=14)
             ),
-            showlegend=True,
-            hovermode='x unified'
+            showlegend=False,
+            hovermode='x unified',
+            hoverlabel=dict(font_size=14)
         )
 
         # Update line colors and add markers
-        fig.data[0].update(line_color='green', name='Cumulative Benefits', mode='lines+markers')  # Benefits line
-        fig.data[1].update(line_color='grey', name='Cumulative Costs', mode='lines+markers')      # Costs line
-        fig.data[2].update(line_color='blue', mode='lines+markers')                    # Ratio line
+        fig.data[0].update(line_color='green', name='Cumulative Benefits', mode='lines')  # Benefits line
+        fig.data[1].update(line_color='grey', name='Cumulative Costs', mode='lines')      # Costs line
+        fig.data[2].update(line_color='blue', mode='lines', line=dict(width=5), yaxis='y2')  # Ratio line on secondary axis
+
+        # Add text labels at the end of each line
+        last_x = df["Year"].iloc[-1]
+        for trace in fig.data:
+            last_y = trace.y[-1]
+            # Put Benefit-to-Cost Ratio label on left side
+            if trace.name == "Benefit-to-Cost Ratio":
+                x_pos = last_x - 3
+                x_anchor = 'right'
+                y_ref = 'y2'  # Use secondary y-axis reference for ratio label
+            else:
+                x_pos = last_x + 2
+                x_anchor = 'left'
+                y_ref = 'y'  # Use primary y-axis reference for other labels
+                
+            fig.add_annotation(
+                x=x_pos,
+                y=last_y,
+                text=trace.name,
+                showarrow=False,
+                font=dict(
+                    color=trace.line.color,
+                    size=16
+                ),
+                xanchor=x_anchor,
+                yanchor='middle',
+                yref=y_ref  # Specify y-axis reference for each label
+            )
+
         st.plotly_chart(fig)
         # Create pie charts of benefit and cost components
         if st.session_state.state_snapshots:
@@ -681,6 +788,7 @@ with tab3:
                         'grey'
                     )
                     st.plotly_chart(fig_costs_bar)
+                    
 with tab4:
     if not st.session_state.get('calculations_done', False):
         st.warning('Please click "Submit" on Input Parameters tab')
@@ -716,9 +824,9 @@ with tab4:
                 else:
                     row = {
                         'Year': year,
-                        'Benefits': year_data['Cumulative_Total_Benefit'],
-                        'Total Costs': year_data['Cumulative_Total_Cost'],
-                        'Ratio': year_data['Benefit-to-Cost Ratio']
+                        f'Total Benefits ({st.session_state.currency})': year_data['Cumulative_Total_Benefit'],
+                        f'Total Costs ({st.session_state.currency})': year_data['Cumulative_Total_Cost'],
+                        'Benefit-to-Cost Ratio': year_data['Benefit-to-Cost Ratio']
                     }
                             
                 summary_data.append(row)
@@ -730,6 +838,11 @@ with tab4:
             # Format all numeric columns
             numeric_cols = summary_df.select_dtypes(include=['float64', 'int64']).columns
             format_dict = {col: '{:,.0f}' for col in numeric_cols}
+            # Override format for benefit-to-cost ratio column
+            if 'Benefit-to-Cost Ratio' in numeric_cols:
+                format_dict['Benfit-to-Cost Ratio'] = '{:,.1f}'
+            if 'Year' in numeric_cols:
+                format_dict['Year'] = '{:.0f}'
             
             # Display summary table without index
             st.table(summary_df.style.format(format_dict).set_table_styles([{'selector': 'thead tr th:first-child', 'props': [('display', 'none')]}, {'selector': 'tbody tr th:first-child', 'props': [('display', 'none')]}]))
@@ -738,15 +851,32 @@ with tab4:
             col1, col2 = st.columns(2)
             
             with col1:
-                show_benefits = st.button("Show Benefits Breakdown")
+                benefits_text = "Hide Benefits Breakdown" if st.session_state.get('show_benefits', False) else "Show Benefits Breakdown"
+                show_benefits = st.button(benefits_text)
             with col2:
-                show_costs = st.button("Show Costs Breakdown")
+                costs_text = "Hide Costs Breakdown" if st.session_state.get('show_costs', False) else "Show Costs Breakdown"
+                show_costs = st.button(costs_text)
 
             # Store button states in session state
             if show_benefits:
-                st.session_state.show_benefits = True
+                st.session_state.show_benefits = not st.session_state.get('show_benefits', False)
             if show_costs:
-                st.session_state.show_costs = True
+                st.session_state.show_costs = not st.session_state.get('show_costs', False)
+
+            def generate_breakdown_table(components, year, component_type, show_per_capita):
+                """Generate breakdown table for benefits or costs"""
+                st.subheader(f"{component_type} Breakdown for {year}")
+                df = pd.DataFrame({
+                    'Component': components.keys(),
+                    f'Value ({st.session_state.currency})': components.values()
+                })
+                if show_per_capita:
+                    year_data = st.session_state.results_df[st.session_state.results_df['Year'] == year].iloc[0]
+                    df['Value'] = df['Value'] / year_data['Population']
+                st.table(df.style.format({'Value': '{:,.0f}'}).set_table_styles([
+                    {'selector': 'thead tr th:first-child', 'props': [('display', 'none')]}, 
+                    {'selector': 'tbody tr th:first-child', 'props': [('display', 'none')]}
+                ]))
 
             if st.session_state.get('show_benefits', False) or st.session_state.get('show_costs', False):
                 # Create container for year selection
@@ -773,15 +903,7 @@ with tab4:
                                 break
                         
                         if selected_benefits:
-                            st.subheader(f"Benefits Breakdown for {selected_year}")
-                            benefits_df = pd.DataFrame({
-                                'Component': selected_benefits.keys(),
-                                'Value': selected_benefits.values()
-                            })
-                            if show_per_capita_2:
-                                year_data = st.session_state.results_df[st.session_state.results_df['Year'] == selected_year].iloc[0]
-                                benefits_df['Value'] = benefits_df['Value'] / year_data['Population']
-                            st.table(benefits_df.style.format({'Value': '{:,.0f}'}).set_table_styles([{'selector': 'thead tr th:first-child', 'props': [('display', 'none')]}, {'selector': 'tbody tr th:first-child', 'props': [('display', 'none')]}]))
+                            generate_breakdown_table(selected_benefits, selected_year, "Benefits", show_per_capita_2)
 
                     # Show costs breakdown if button clicked
                     if st.session_state.get('show_costs', False):
@@ -792,15 +914,7 @@ with tab4:
                                 break
                         
                         if selected_costs:
-                            st.subheader(f"Costs Breakdown for {selected_year}")
-                            costs_df = pd.DataFrame({
-                                'Component': selected_costs.keys(),
-                                'Value': selected_costs.values()
-                            })
-                            if show_per_capita_2:
-                                year_data = st.session_state.results_df[st.session_state.results_df['Year'] == selected_year].iloc[0]
-                                costs_df['Value'] = costs_df['Value'] / year_data['Population']
-                            st.table(costs_df.style.format({'Value': '{:,.0f}'}).set_table_styles([{'selector': 'thead tr th:first-child', 'props': [('display', 'none')]}, {'selector': 'tbody tr th:first-child', 'props': [('display', 'none')]}]))
+                            generate_breakdown_table(selected_costs, selected_year, "Costs", show_per_capita_2)
         else:
             st.warning("No data available for summary years")
 
@@ -811,4 +925,4 @@ with tab5:
     components.html(doc_content, height=1200, scrolling=True)
     
 with tab6:
-    st.write("Help")
+    st.write("For support with the SanOpps application, please contact the World Toilet Organization at ")

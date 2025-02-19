@@ -11,12 +11,29 @@ def switch_tab(tab):
     """
 
 
-
 def create_pie_chart(components, title, colors):
     """Create pie chart with main components and legend for small values"""
     total = sum(components.values())
-    main_components = {k:v for k,v in components.items() if (v/total)*100 >= 1}
-    legend_components = {k:v for k,v in components.items() if (v/total)*100 < 1}
+    
+    # Add line breaks to long component names
+    formatted_components = {}
+    for k,v in components.items():
+        if len(k) > 10:
+            # Split into appropriate number of lines based on length
+            num_splits = (len(k) - 1) // 10
+            split_k = k
+            for i in range(num_splits):
+                # Find first space after next 10 chars
+                start_pos = i * 10
+                space_index = split_k.find(' ', start_pos)
+                if space_index != -1:
+                    # Insert line break after space
+                    split_k = split_k[:space_index] + '<br>' + split_k[space_index+1:]
+            k = split_k
+        formatted_components[k] = v
+        
+    main_components = {k:v for k,v in formatted_components.items() if (v/total)*100 >= 1}
+    legend_components = {k:v for k,v in formatted_components.items() if (v/total)*100 < 1}
     
     fig = px.pie(
         values=list(main_components.values()),
@@ -30,7 +47,7 @@ def create_pie_chart(components, title, colors):
     fig.update_layout(
         showlegend=False,
         height=350,
-        margin=dict(t=50, b=50, l=50, r=50),
+        margin=dict(t=50, b=50, l=75, r=75),
         annotations=[dict(text=title.replace('\n', '<br>'), x=0.5, y=0.5, font_size=14, showarrow=False)]
     )
     
