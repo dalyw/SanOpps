@@ -1,39 +1,33 @@
-Description,varname,Value,Units,Source
-Rate of decadal growth of population,pop_growth_rate,10,%
-Target Year (Date of commission of WASH interventions),target_year,2030,,
-FHTC cost per household,fhtc_cost_per_household,5000,INR
-Number of Urban Households (Current),urban_households,506353,User input or computed
-Percentage of Urban Households having tap water supply(current),tap_water_pct,76.4,Provided by Ecosan
-Number of persons in slums per WC(CT),persons_per_wc_ct,30,As provided by Ecosan
-Capital cost of construction per WC(CT),capital_cost_wc_ct,98000,INR
-Number of persons (floating population) per WC(PT),persons_per_wc_pt,1200,As provided by Ecosan
-Capital cost of construction per WC(PT),capital_cost_wc_pt,100000,INR
-Percentage of population connected to sewerage network (current),sewer_connection_pct,96,Percentage
-Cost of laying sewerage network,cost_sewer_network,4000000,INR per Km
-Annual Maintenance cost for Sewerage Network per KM,sewer_maintenance_cost,9,INR per Km
-Percentage of population connected to sewered sanitation(current),sewered_sanitation_pct,96,Provided by Ecosan
-Water consumption per capita,water_consumption,150,LPCD
-Current Cumulative Design Capacity of STPs,stp_capacity,340,MLD
-Cost of STP per MLD of wastewater,stp_cost,30000000,INR
-Annual maintenance cost of STP per MLD of waste water,stp_maintenance_cost,800000,INR per MLD
-Desludging frequency for servicing household having septic tanks,desludging_frequency,10,years
-Septage emptied per household during desludging of septic tank,septage_emptied_per_household,3,KL
-Cost of co treatment facility at STP,cost_co_treatment,100000,INR per KL
-Cost of FSTP,cost_fstp,350000,INR per KL
-Total annual maintenance cost of FSTP,fstp_maintenance_cost,50000,INR per KLD
-ULB officials to be trained within Population,percent_ulb_officials_trained,0.1,%
-Annual Cost of capacity building per person(projected),annual_cost_capacity_building,10000,INR,
-Annual cost of public awareness campaign per person (projected),awareness_cost,25,INR,
-Discount Rate,discount_rate,6,%,
-Time saved from water collection time,water_collection_time,1,HR/Household-Day,EcoSan
-Time saved from water collection (adjusted by FHTC proportion),water_collection_saved,2,HR/Household-Day,EcoSan
-Household size,household_size,4,person,EcoSan
-Time saved from sanitation access (adjusted by CT proportion),sanitation_access_saved,0.5,HR/Person-Day,EcoSan
-Sewer network length per person (pop <= 20000),sewer_length_small,3,m/person,EcoSan
-Sewer network length per person (20000 < pop <= 100000),sewer_length_medium,2,m/person,EcoSan
-Sewer network length per person (pop > 100000),sewer_length_large,1,m/person,EcoSan
-Cost of commute to doctor,commute_cost_doctor,50,INR,EcoSan
-Cost per doctor visit,cost_per_visit,3000,INR,EcoSan
-Percentage of treated wastewater reused,wastewater_reuse_pct,20,%,Government policy
-Price of treated wastewater,treated_water_price,15,INR/KL,Market rate
-
+varname,value,units,source,category,description
+pop_growth_rate,10,%,EcoSan,rate,10-year Population Growth Rate
+target_year,2030,,EcoSan,capex,Intervention Year
+fhtc_cost_per_household,5000,INR,EcoSan,capex,FHTC cost/household
+persons_per_wc,30,As provided by Ecosan,EcoSan,capex,Number of persons in slums for each CT
+wc_per_ct,20,As provided by Ecosan,EcoSan,capex,Number of WC per CT block
+capital_cost_wc,98000,INR,EcoSan,capex,Capital cost for each CT
+persons_per_pt,1200,As provided by Ecosan,EcoSan,capex,Number of floating population persons/PT
+cost_sewer_network,4000000,INR/Km,EcoSan,capex,Cost of laying sewerage
+sewer_maintenance_cost,9,INR/Km,EcoSan,opex,Annual Maintenance cost for Sewerage Network
+water_consumption,150,L/Person-Day,EcoSan,opex,Water consumption/capita
+stp_cost,30000000,INR/MLD,EcoSan,opex,STP Treatment Cost/MLD of wastewater
+stp_maintenance_cost,800000,INR/MLDCapacity-Year,EcoSan,opex,STP maintenance cost of STP
+desludging_frequency,10,years,EcoSan,opex,Septic desludging frequency
+septage_emptied_per_household,3,KL,EcoSan,opex,Septage emptied in household desludging
+cost_co_treatment,100000,INR/KL,EcoSan,opex,Cost of co treatment facility at STP
+cost_fstp,350000,INR/KL,EcoSan,capex,Capital cost of FSTP
+fstp_maintenance_cost,50000,INR/KLD,EcoSan,opex,Total annual maintenance cost of FSTP
+percent_ulb_officials_trained,0.1,%,EcoSan,opex,ULB officials to be trained within Population
+annual_cost_capacity_building,10000,INR,EcoSan,opex,Annual Cost of capacity building/person
+awareness_cost,25,INR,EcoSan,opex,Annual cost of public awareness campaign
+discount_rate,6,%,EcoSan,rate,Discount Rate
+water_collection_time,1,HR/Household-Day,EcoSan,opex,Time saved from water collection time
+water_collection_saved,2,HR/Household-Day,EcoSan,opex,Time saved from water collection (adjusted by FHTC proportion)
+household_size,4,person,EcoSan,opex,Household size
+sanitation_access_saved,0.5,HR/Person-Day,EcoSan,opex,Time saved from sanitation access (adjusted by CT proportion)
+sewer_length_small,3,m/person,EcoSan,capex,Sewer network length/person (pop <= 20000)
+sewer_length_medium,2,m/person,EcoSan,capex,Sewer network length per person (20000 < pop <= 100000)
+sewer_length_large,1,m/person,EcoSan,capex,Sewer network length per person (pop > 100000)
+commute_cost_doctor,50,INR,EcoSan,opex,Cost of commute to doctor
+cost_per_visit,3000,INR,EcoSan,opex,Cost per doctor visit
+wastewater_reuse_pct,20,%,Government policy,opex,Percentage of treated wastewater reused
+treated_water_price,15,INR/KL,Market rate,opex,Price of treated wastewater

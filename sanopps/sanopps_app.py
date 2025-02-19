@@ -28,7 +28,7 @@ else:
 # add params to st.session_state
 for _, row in params.iterrows():
     if pd.notna(row['varname']): 
-        st.session_state[row['varname']] = row['Value']
+        st.session_state[row['varname']] = row['value']
 
 st.title("SanOpps: The WASH Cost-Benefit Analysis Tool for Local Government")
 
@@ -327,28 +327,27 @@ with tab2:
 
             # Population projections
             n_years = [(year - st.session_state.current_year) / 10 for year in years]
-            pop_array = [st.session_state.urban_pop * (1 + st.session_state.growth_rate/100) ** n for n in n_years]
+
             
             # Population arrays - slum population decreases by 10% by target year
+            pop_array = [st.session_state.urban_pop * (1 + st.session_state.growth_rate/100) ** n for n in n_years]
             percentage_slum_pop_current = st.session_state.slum_pop / st.session_state.urban_pop
             percentage_floating_pop_current = st.session_state.floating_pop / st.session_state.urban_pop 
             percentage_slum_pop_array = [max(percentage_slum_pop_current - 0.1, 0) for _ in years]
             slum_pop_array = [pct * pop for pct, pop in zip(percentage_slum_pop_array, pop_array)]
             floating_pop_array = [percentage_floating_pop_current * pop for pop in pop_array]
-            
-            # Households array
             household_ratio = st.session_state.urban_pop / st.session_state.urban_households
             urban_households_array = [pop / household_ratio for pop in pop_array]
             
             # Water connections array - target 100% FHTC coverage
-            urban_households_tap_water_current = (st.session_state.tap_water_pct/100) * st.session_state.urban_households
-            urban_households_fhtc_array = [max(0, households - urban_households_tap_water_current) for households in urban_households_array]
+            urban_households_with_fhtc = (st.session_state.tap_water_pct/100) * st.session_state.urban_households
+            urban_households_without_fhtc = [households - urban_households_with_fhtc for households in urban_households_array]
 
             # Toilet calculations - 30 persons per WC as per SBM 2.0
-            wc_ct_array = [slum_pop / st.session_state.persons_per_wc_ct for slum_pop in slum_pop_array]
-            wc_pt_array = [floating_pop / st.session_state.persons_per_wc_pt for floating_pop in floating_pop_array]
-            additional_wc_ct_array = [max(0, wc_ct - st.session_state.comm_toilets * 20) for wc_ct in wc_ct_array] # Assuming 20 WCs per CT block
-            additional_wc_pt_array = [max(0, wc_pt - st.session_state.public_toilets * 20) for wc_pt in wc_pt_array]
+            ct_array = [slum_pop / st.session_state.persons_per_wc for slum_pop in slum_pop_array]
+            pt_array = [floating_pop / st.session_state.persons_per_pt for floating_pop in floating_pop_array]
+            additional_ct_array = [ct - st.session_state.comm_toilets * st.session_state.wc_per_ct for ct in ct_array] # Assuming 20 WCs per CT block
+            additional_pt_array = [pt - st.session_state.public_toilets * st.session_state.wc_per_ct for pt in pt_array]
 
             # Sewer calculations array - maintain current coverage %
             pop_connected_sewer_array = [(st.session_state.current_sewer_pop/100) * pop for pop in pop_array]
@@ -363,23 +362,28 @@ with tab2:
             # FSTP calculations array
             households_septic_tanks_array = [households * (1 - st.session_state.current_sewer_pop/100) for households in urban_households_array]
             septage_treated_per_day_array = [(households * st.session_state.septage_emptied_per_household) / (st.session_state.desludging_frequency * 300) for households in households_septic_tanks_array] # 3KL per household, 10 year desludging, 300 working days
-
             # Initialize component dictionaries
-            cost_components = {
-                'Water Supply': 0,
-                'Toilets': 0,
-                'Sewer': 0,
-                'STP': 0, 
-                'FSTP': 0,
-                'Training': 0
-            }
-            benefit_components = {
-                'Health Benefits': 0,
-                'Productivity Benefits': 0,
-                'Time Saved Benefits': 0,
-                'Recycled Water Benefits': 0,
-                'Tourism Benefits': 0
-            }
+            
+            cost_components = dict.fromkeys([
+                'Tap Water Supply',
+                'Community Toilets', 
+                'Public Toilets',
+                'Sewer',
+                'STP',
+                'Fecal Sludge Treatment Plant',
+                'Training',
+                'Public Awareness'
+            ], 0)
+
+            benefit_components = dict.fromkeys([
+                'Reduced Healtcare Costs',
+                'Productivity from Healthcare',
+                'Time Saved from Water Collection', 
+                'Time Saved from Sanitation Access',
+                'Recycled Water',
+                'Tourism'
+            ], 0)
+
             cumulative_benefit_components = copy.deepcopy(benefit_components)
             cumulative_cost_components = copy.deepcopy(cost_components)
             cumulative_present_value_total_cost = 0
@@ -394,11 +398,12 @@ with tab2:
                 # Add capital costs only in investment year
                 if year == st.session_state.investment_year:
                     # Water supply capital costs
-                    capital_cost_piped_water = max(0, urban_households_fhtc_array[i] * st.session_state.fhtc_cost)
+                    capital_cost_piped_water = urban_households_without_fhtc[i] * st.session_state.fhtc_cost
                     
                     # Toilet capital costs
-                    total_capital_cost_wc_ct = max(0, additional_wc_ct_array[i] * st.session_state.capital_cost_wc_ct)
-                    total_capital_cost_wc_pt = max(0, additional_wc_pt_array[i] * st.session_state.capital_cost_wc_pt)
+                    total_capital_cost_ct = additional_ct_array[i] * st.session_state.capital_cost_wc
+                    total_capital_cost_pt = additional_pt_array[i] * st.session_state.capital_cost_wc
+
                     # Sewer and treatment capital costs
                     # Determine sewer length per person based on population
                     if pop_array[i] <= 20000:
@@ -426,12 +431,11 @@ with tab2:
 
                     # Awareness costs
                     total_awareness_cost = max(0, pop_array[i] * st.session_state.awareness_cost)
-                    total_training_outreach_cost = max(0, total_annual_cost_capacity_building + total_awareness_cost)
 
                     present_value_total_cost = (
-                        capital_cost_piped_water + total_capital_cost_wc_ct + total_capital_cost_wc_pt +
+                        capital_cost_piped_water + total_capital_cost_ct + total_capital_cost_pt +
                         capital_cost_sewer_network + capital_cost_additional_stp + cost_fstp_total +
-                        total_training_outreach_cost
+                        total_awareness_cost + total_annual_cost_capacity_building
                     ) * discount_factor
 
                     cumulative_present_value_total_cost = present_value_total_cost
@@ -447,17 +451,19 @@ with tab2:
                     
                     present_value_total_cost = (
                         annual_maint_sewer_network_total + annual_maint_stp_total + 
-                        annual_maint_fstp_total + total_training_outreach_cost
+                        annual_maint_fstp_total + total_awareness_cost + total_annual_cost_capacity_building
                     ) * discount_factor
 
                     # Store cost components
                     cost_components = {
-                        'Water Supply': max(0, capital_cost_piped_water * discount_factor if year == st.session_state.investment_year else 0),
-                        'Toilets': max(0, (total_capital_cost_wc_ct + total_capital_cost_wc_pt) * discount_factor if year == st.session_state.investment_year else 0),
+                        'Tap Water Supply': max(0, capital_cost_piped_water * discount_factor if year == st.session_state.investment_year else 0),
+                        'Community Toilets': max(0, total_capital_cost_ct * discount_factor if year == st.session_state.investment_year else 0),
+                        'Public Toilets': max(0, total_capital_cost_pt * discount_factor if year == st.session_state.investment_year else 0),
                         'Sewer': max(0, (capital_cost_sewer_network * discount_factor if year == st.session_state.investment_year else 0) + annual_maint_sewer_network_total * discount_factor),
                         'STP': max(0, (capital_cost_additional_stp * discount_factor if year == st.session_state.investment_year else 0) + annual_maint_stp_total * discount_factor),
-                        'FSTP': max(0, (cost_fstp_total * discount_factor if year == st.session_state.investment_year else 0) + annual_maint_fstp_total * discount_factor),
-                        'Training': max(0, total_training_outreach_cost * discount_factor)
+                        'Fecal Sludge Treatment Plant': max(0, (cost_fstp_total * discount_factor if year == st.session_state.investment_year else 0) + annual_maint_fstp_total * discount_factor),
+                        'Training': max(0, total_annual_cost_capacity_building * discount_factor),
+                        'Public Awareness': total_awareness_cost * discount_factor
                     }
 
                     # Calculate benefits
@@ -492,11 +498,12 @@ with tab2:
 
                     # Store benefit components
                     benefit_components = {
-                        'Health Benefits': health_benefits * discount_factor,
-                        'Productivity Benefits': (productivity_benefits_working + productivity_benefits_nonworking) * discount_factor,
-                        'Time Saved Benefits': (time_saved_working + time_saved_nonworking) * discount_factor,
-                        'Recycled Water Benefits': recycled_water_benefits * discount_factor,
-                        'Tourism Benefits': tourism_benefits * discount_factor
+                        'Reduced Healtcare Costs': health_benefits * discount_factor,
+                        'Productivity from Healthcare': (productivity_benefits_working + productivity_benefits_nonworking) * discount_factor,
+                        'Time Saved from Water Collection': time_saved_working * discount_factor,
+                        'Time Saved from Sanitation Access': time_saved_nonworking * discount_factor,
+                        'Recycled Water': recycled_water_benefits * discount_factor,
+                        'Tourism': tourism_benefits * discount_factor
                     }
 
                     # Update cumulative values
@@ -635,17 +642,18 @@ with tab3:
                         values=list(selected_benefits.values()),
                         names=list(selected_benefits.keys()),
                         title=f"Distribution of Net Present Value Benefits ({selected_year})",
-                        color_discrete_sequence=['#004d40', '#00695c', '#00796b', '#00897b', '#009688', '#26a69a', '#4db6ac']  # Shades of green
+                        color_discrete_sequence=['#006400', '#008000', '#228B22', '#32CD32', '#90EE90', '#98FB98', '#ADFF2F']  # Distinct shades of green
                     )
-                    fig_benefits.update_traces(textposition='inside', textinfo='percent+label')
+                    fig_benefits.update_traces(textposition='outside', textinfo='percent+label')
+                    fig_benefits.update_layout(showlegend=False)
                     st.plotly_chart(fig_benefits)
 
             with col2:
                 # Get cost components for selected year
                 selected_costs = None
                 for snapshot in st.session_state.state_snapshots:
-                    if snapshot['year'] == selected_year and snapshot.get('cost_components'):
-                        selected_costs = snapshot['cost_components']
+                    if snapshot['year'] == selected_year and snapshot.get('cumulative_cost_components'):
+                        selected_costs = snapshot['cumulative_cost_components']
                         break
                 
                 if selected_costs:
@@ -653,11 +661,11 @@ with tab3:
                         values=list(selected_costs.values()),
                         names=list(selected_costs.keys()),
                         title=f"Distribution of Net Present Value Costs ({selected_year})", 
-                        color_discrete_sequence=['#b71c1c', '#c62828', '#d32f2f', '#e53935', '#f44336', '#ef5350', '#e57373']  # Shades of red
+                        color_discrete_sequence=['#1a1a1a', '#333333', '#4d4d4d', '#666666', '#808080', '#999999', '#b3b3b3']  # Distinct shades of grey
                     )
-                    fig_costs.update_traces(textposition='inside', textinfo='percent+label')
+                    fig_costs.update_traces(textposition='outside', textinfo='percent+label')
+                    fig_costs.update_layout(showlegend=False)
                     st.plotly_chart(fig_costs)
-                    
 with tab4:
     if not st.session_state.get('calculations_done', False):
         st.warning('Please click "Submit" on Input Parameters tab')
@@ -687,31 +695,99 @@ with tab4:
                     row = {
                         'Year': year,
                         'Benefits': year_data['Benefits_Per_Person'],
-                        'Costs': year_data['Costs_Per_Person'],
+                        'Total Costs': year_data['Costs_Per_Person'],
                         'Ratio': year_data['Benefit-to-Cost Ratio']
                     }
                 else:
                     row = {
                         'Year': year,
                         'Benefits': year_data['Cumulative_Total_Benefit'],
-                        'Costs': year_data['Cumulative_Total_Cost'],
+                        'Total Costs': year_data['Cumulative_Total_Cost'],
                         'Ratio': year_data['Benefit-to-Cost Ratio']
                     }
+                            
                 summary_data.append(row)
             
-        # Create and display table if we have data
+        # Create and display main summary table if we have data
         if summary_data:
             summary_df = pd.DataFrame(summary_data)
             
-            # Display summary table
-            st.table(summary_df.style.format({
-                'Benefits': '{:,.2f}',
-                'Costs': '{:,.2f}',
-                'Ratio': '{:,.2f}'
-            }))
+            # Format all numeric columns
+            numeric_cols = summary_df.select_dtypes(include=['float64', 'int64']).columns
+            format_dict = {col: '{:,.0f}' for col in numeric_cols}
+            
+            # Display summary table without index
+            st.table(summary_df.style.format(format_dict).set_table_styles([{'selector': 'thead tr th:first-child', 'props': [('display', 'none')]}, {'selector': 'tbody tr th:first-child', 'props': [('display', 'none')]}]))
+
+            # Add buttons for detailed breakdowns
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                show_benefits = st.button("Show Benefits Breakdown")
+            with col2:
+                show_costs = st.button("Show Costs Breakdown")
+
+            # Store button states in session state
+            if show_benefits:
+                st.session_state.show_benefits = True
+            if show_costs:
+                st.session_state.show_costs = True
+
+            if st.session_state.get('show_benefits', False) or st.session_state.get('show_costs', False):
+                # Create container for year selection
+                year_select_container = st.container()
+                
+                # Let user select year for breakdown
+                selected_year = year_select_container.selectbox(
+                    "Select year to view breakdown:",
+                    summary_years,
+                    index=len(summary_years)-1,
+                    key="breakdown_year"
+                )
+
+                # Create container for tables
+                tables_container = st.container()
+
+                with tables_container:
+                    # Show benefits breakdown if button clicked
+                    if st.session_state.get('show_benefits', False):
+                        selected_benefits = None
+                        for snapshot in st.session_state.state_snapshots:
+                            if snapshot['year'] == selected_year and snapshot.get('cumulative_benefit_components'):
+                                selected_benefits = snapshot['cumulative_benefit_components']
+                                break
+                        
+                        if selected_benefits:
+                            st.subheader(f"Benefits Breakdown for {selected_year}")
+                            benefits_df = pd.DataFrame({
+                                'Component': selected_benefits.keys(),
+                                'Value': selected_benefits.values()
+                            })
+                            if show_per_capita_2:
+                                year_data = st.session_state.results_df[st.session_state.results_df['Year'] == selected_year].iloc[0]
+                                benefits_df['Value'] = benefits_df['Value'] / year_data['Population']
+                            st.table(benefits_df.style.format({'Value': '{:,.0f}'}).set_table_styles([{'selector': 'thead tr th:first-child', 'props': [('display', 'none')]}, {'selector': 'tbody tr th:first-child', 'props': [('display', 'none')]}]))
+
+                    # Show costs breakdown if button clicked
+                    if st.session_state.get('show_costs', False):
+                        selected_costs = None
+                        for snapshot in st.session_state.state_snapshots:
+                            if snapshot['year'] == selected_year and snapshot.get('cumulative_cost_components'):
+                                selected_costs = snapshot['cumulative_cost_components']
+                                break
+                        
+                        if selected_costs:
+                            st.subheader(f"Costs Breakdown for {selected_year}")
+                            costs_df = pd.DataFrame({
+                                'Component': selected_costs.keys(),
+                                'Value': selected_costs.values()
+                            })
+                            if show_per_capita_2:
+                                year_data = st.session_state.results_df[st.session_state.results_df['Year'] == selected_year].iloc[0]
+                                costs_df['Value'] = costs_df['Value'] / year_data['Population']
+                            st.table(costs_df.style.format({'Value': '{:,.0f}'}).set_table_styles([{'selector': 'thead tr th:first-child', 'props': [('display', 'none')]}, {'selector': 'tbody tr th:first-child', 'props': [('display', 'none')]}]))
         else:
             st.warning("No data available for summary years")
-
 
 with tab5:
     st.write("### Sanitation Variables Glossary")
