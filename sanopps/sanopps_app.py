@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 from cost_functions import *
 from app_functions import *
 
-read_local = True
+read_local = False
 if read_local:
     city_default_data = pd.read_csv('data/city_default_data.csv')
     variables = pd.read_csv('data/variables.csv')
