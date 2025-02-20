@@ -471,6 +471,7 @@ with tab2:
                 inflation_factor = (1 + st.session_state.inflation/100) ** (year - st.session_state.current_year)
                 discount_factor = 1 / ((1 + st.session_state.discount_rate/100) ** (year - st.session_state.current_year))
                 overall_factor = inflation_factor * discount_factor
+                print(overall_factor)
 
                 # Add capital costs only in investment year
                 if year == st.session_state.investment_year:
