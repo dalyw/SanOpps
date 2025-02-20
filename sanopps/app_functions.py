@@ -3,6 +3,19 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
+# Currency conversion rates (hardcoded for now, could be made dynamic)
+conversion_rates = {
+    'INR': 1,
+    'USD': 83.28,  # 1 USD = 83.28 INR
+    'EUR': 89.13   # 1 EUR = 89.13 INR
+}
+
+# Function to initialize session state
+def initialize_session_state(keys, default_values):
+    for key, default_value in zip(keys, default_values):
+        if key not in st.session_state:
+            st.session_state[key] = default_value
+
 def switch_tab(tab):
     return f"""
     var tabGroup = window.parent.document.getElementsByClassName("stTabs")[0]
