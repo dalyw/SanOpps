@@ -35,7 +35,7 @@ FSTPs Available?,,fstp_avail,user_input,Decentralized Treatment,str,,Whether Fec
 FSTP Design Capacity,KLD,fstp_capacity,user_input,Decentralized Treatment,float,,The maximum volume of fecal sludge that can be treated per day
 FSTP Cost,currency/KL,fstp_cost,optional_input,Decentralized Treatment,float,,The cost per kiloliter of FSTP capacity
 FSTP Annual Maintenance,currency/KLD,fstp_maint_cost,optional_input,Decentralized Treatment,float,,The yearly maintenance cost per kiloliter per day of FSTP capacity
-Percentage of Gap to be Addressed by Sewer,%,sewer_vs_fstp_percent,optional_input,Decentralized Treatment,slider,,The percentage of sanitation gap to be addressed through sewered systems
+Percentage of Gap to be Addressed by Sewer,%,sewer_vs_fstp_percent,user_input,Decentralized Treatment,slider,,The percentage of sanitation gap to be addressed through sewered systems
 Sewer Construction Cost,currency/Km,sewer_const_cost,optional_input,Centralized Treatment,float,,The cost per kilometer for constructing sewer lines
 Sewer Network Length,Km,sewer_length,user_input,Centralized Treatment,float,,The total length of sewer network in kilometers
 Sewer Annual Maintenance,currency/Km,sewer_maint_cost,optional_input,Centralized Treatment,float,,The yearly maintenance cost per kilometer of sewer network
@@ -51,8 +51,11 @@ Septage emptied in household desludging,KL,septage_emptied_per_household,optiona
 Sewer network length per person (pop > 100000),m/person,sewer_length_large,optional_input,Centralized Treatment,float,,
 Sewer network length per person (20000 < pop <= 100000),m/person,sewer_length_medium,optional_input,Centralized Treatment,float,,
 Sewer network length/person (pop <= 20000),m/person,sewer_length_small,optional_input,Centralized Treatment,float,,
-Price of treated wastewater,INR/KL,treated_water_price,optional_input,Centralized Treatment,float,,
-Percentage of treated wastewater reused,%,wastewater_reuse_pct,optional_input,Centralized Treatment,float,,
 Public Awareness Cost,currency/Person,awareness_cost,optional_input,Training and Outreach,float,,The cost per person for public awareness campaigns
-Recycled Water Value,currency/KL,recycled_water_value,optional_input,Training and Outreach,float,,The economic value per kiloliter of recycled water
+Recycled Water Value,currency/KL,recycled_water_value,optional_input,Centralized Treatment,float,,The economic value per kiloliter of recycled water
 Community Training Cost,currency/Person,training_cost,optional_input,Training and Outreach,float,,The cost per person for community sanitation training
+Percent Decrease in Disease Incidence due to WASH,%,disease_decrease_percent,optional_input,Health and Productivity,float,,
+Days off Work Per Incidence,Count,days_per_incidence,optional_input,Health and Productivity,float,,
+Percent of Wastewater Reused,%,wastewater_reuse_percent,optional_input,Centralized Treatment,float,,
+Slum Population Percentage Decrease,%,slum_pop_percent_decrease,optional_input,Demographic and Growth Information,float,,
+Percentage increase in GDP due to Tourism,%,increase_gdp_tourism_percent,optional_input,Health and Productivity,float,,

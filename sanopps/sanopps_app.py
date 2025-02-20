@@ -207,7 +207,8 @@ def generate_inputs(variables, category, input_type):
                         if row['unit'] == '%':
                             # For % default, store raw value without _percent
                             base_key = key.replace('_percent', '')
-                            st.session_state[base_key] = st.session_state[key] * st.session_state.get(row['percent_option'], 1) / 100
+                            st.session_state[base_key] = st.session_state[key] / 100 * st.session_state.get(row['percent_option'], 1)
+                            print(row['percent_option'])
                         else:
                             # For raw default, store percent value with _percent
                             st.session_state[f"{key}_percent"] = st.session_state[key] / st.session_state.get(row['percent_option'], 1) * 100
@@ -405,14 +406,11 @@ with tab2:
             
             # Create arrays dictionary
             arrays = {}
-            
             # Population arrays
             arrays['pop'] = [st.session_state.urban_pop * (1 + st.session_state.growth_rate/100) ** n for n in n_years]
-            percentage_slum_pop_current = st.session_state.slum_pop / st.session_state.urban_pop
-            percentage_floating_pop_current = st.session_state.floating_pop / st.session_state.urban_pop
-            percentage_slum_pop_array = [max(percentage_slum_pop_current - 0.1, 0) for _ in years]
-            arrays['slum_pop'] = [pct * pop for pct, pop in zip(percentage_slum_pop_array, arrays['pop'])]
-            arrays['floating_pop'] = [percentage_floating_pop_current * pop for pop in arrays['pop']]
+            slum_pop_percent_projected = max(st.session_state.slum_pop_percent-st.session_state.slum_pop_percent_decrease,0)
+            arrays['slum_pop'] = [(slum_pop_percent_projected / 100) * pop for pop in arrays['pop']]
+            arrays['floating_pop'] = [(st.session_state.floating_pop_percent / 100) * pop for pop in arrays['pop']]
             household_ratio = st.session_state.urban_pop / st.session_state.urban_households
             arrays['urban_households'] = [pop / household_ratio for pop in arrays['pop']]
             
@@ -422,8 +420,8 @@ with tab2:
             # Toilet calculations
             arrays['ct'] = [slum_pop / st.session_state.persons_per_wc for slum_pop in arrays['slum_pop']]
             arrays['pt'] = [floating_pop / st.session_state.persons_per_pt for floating_pop in arrays['floating_pop']]
-            arrays['additional_ct'] = [ct - st.session_state.comm_toilets * st.session_state.wc_per_ct for ct in arrays['ct']]
-            arrays['additional_pt'] = [pt - st.session_state.public_toilets * st.session_state.wc_per_ct for pt in arrays['pt']]
+            arrays['additional_ct'] = [max(ct - st.session_state.comm_toilets * st.session_state.wc_per_ct,0) for ct in arrays['ct']]
+            arrays['additional_pt'] = [max(pt - st.session_state.public_toilets * st.session_state.wc_per_ct,0) for pt in arrays['pt']]
 
             # Sewer calculations
             arrays['pop_connected_sewer'] = [(st.session_state.urban_households_with_sewer_percent/100) * pop for pop in arrays['pop']]
@@ -431,15 +429,21 @@ with tab2:
                 sewer_length_per_person = 0
             else:
                 sewer_length_per_person = st.session_state.sewer_length / ((st.session_state.urban_households_with_sewer_percent/100) * st.session_state.urban_pop)
-            arrays['sewer_network'] = [(pop * sewer_length_per_person) / 1000 for pop in arrays['pop_connected_sewer']]
+
+            # Split treatment gap between sewer and FSTP based on sewer_vs_fstp_percent
+            sewer_fraction = st.session_state.sewer_vs_fstp_percent / 100
+            fstp_fraction = 1 - sewer_fraction
+
+            # Calculate sewer network needs based on sewer fraction
+            arrays['sewer_network'] = [(pop * sewer_length_per_person * sewer_fraction) / 1000 for pop in arrays['pop_connected_sewer']]
             arrays['gap_sewer_network'] = [max(0, network - st.session_state.sewer_length) for network in arrays['sewer_network']]
             
-            # Treatment capacity
-            arrays['sewage_generated'] = [(1-st.session_state.wastewater_reuse_pct) * pop * st.session_state.water_consumption / 1000000 for pop in arrays['pop_connected_sewer']]
-            arrays['gap_treatment_capacity'] = [max(0, sewage - st.session_state.stp_capacity) for sewage in arrays['sewage_generated']]
+            # Treatment capacity calculations split by fraction
+            arrays['sewage_generated'] = [(1-st.session_state.wastewater_reuse_percent / 100) * pop * st.session_state.water_consumption / 1000000 for pop in arrays['pop_connected_sewer']]
+            arrays['gap_treatment_capacity'] = [max(0, sewage * sewer_fraction - st.session_state.stp_capacity) for sewage in arrays['sewage_generated']]
             
-            # FSTP calculations
-            arrays['households_septic_tanks'] = [households * (1 - st.session_state.urban_households_with_sewer_percent/100) for households in arrays['urban_households']]
+            # FSTP calculations based on FSTP fraction
+            arrays['households_septic_tanks'] = [households * (1 - st.session_state.urban_households_with_sewer_percent/100) * fstp_fraction for households in arrays['urban_households']]
             arrays['septage_treated_per_day'] = [(households * st.session_state.septage_emptied_per_household) / (st.session_state.desludging_freq * 300) for households in arrays['households_septic_tanks']]
 
             # Initialize component dictionaries
@@ -464,34 +468,36 @@ with tab2:
             for i, year in enumerate(years):
                 present_value_total_cost = 0
                 present_value_total_benefits = 0
+                inflation_factor = (1 + st.session_state.inflation/100) ** (year - st.session_state.current_year)
                 discount_factor = 1 / ((1 + st.session_state.discount_rate/100) ** (year - st.session_state.current_year))
+                overall_factor = inflation_factor * discount_factor
 
                 # Add capital costs only in investment year
                 if year == st.session_state.investment_year:
                     cost_components = add_capital_cost(year, arrays, i, st.session_state)
-                    present_value_total_cost = sum(cost_components.values()) * discount_factor
+                    print(cost_components)
+                    present_value_total_cost = sum(cost_components.values()) * overall_factor
                     cumulative_present_value_total_cost = present_value_total_cost
 
-                # Add operating costs and benefits after investment year
-
-                                # Add capital costs only in investment year
+                # Add opearting costs before benefits commence
                 elif year < st.session_state.investment_year + st.session_state.construction_time:
                     cost_components = add_operating_cost(i, arrays, st.session_state)
-                    present_value_total_cost = sum(cost_components.values()) * discount_factor
+                    print(cost_components)
+                    present_value_total_cost = sum(cost_components.values()) * overall_factor
 
                 # Add operating costs and benefits after investment year
                 elif year > st.session_state.investment_year + st.session_state.construction_time:
                     cost_components = add_operating_cost(i, arrays, st.session_state)
                     benefit_components = add_annual_benefit(i, arrays, st.session_state)
 
-                    present_value_total_cost = sum(cost_components.values()) * discount_factor
-                    present_value_total_benefits = sum(benefit_components.values()) * discount_factor
+                    present_value_total_cost = sum(cost_components.values()) * overall_factor
+                    present_value_total_benefits = sum(benefit_components.values()) * overall_factor
 
                     # Update cumulative values
                     for key in cost_components:
-                        cumulative_cost_components[key] += cost_components[key] * discount_factor
+                        cumulative_cost_components[key] += cost_components[key] * overall_factor
                     for key in benefit_components:
-                        cumulative_benefit_components[key] += benefit_components[key] * discount_factor
+                        cumulative_benefit_components[key] += benefit_components[key] * overall_factor
 
                     cumulative_present_value_total_cost += present_value_total_cost
                     cumulative_present_value_total_benefit += present_value_total_benefits
@@ -501,8 +507,6 @@ with tab2:
 
                 # Store state snapshot
                 state_snapshot = {
-                    'benefit_components': benefit_components.copy() if year > st.session_state.investment_year else None,
-                    'cost_components': cost_components.copy() if year > st.session_state.investment_year else None,
                     'cumulative_benefit': cumulative_present_value_total_benefit,
                     'cumulative_cost': cumulative_present_value_total_cost,
                     'cumulative_benefit_components': cumulative_benefit_components.copy() if year > st.session_state.investment_year else None,
@@ -515,14 +519,14 @@ with tab2:
                 # Store results
                 results_data.append({
                     "Year": year,
-                    "Benefits_Per_Person": present_value_total_benefits / arrays['pop'][i] if present_value_total_benefits > 0 else 0,
-                    "Costs_Per_Person": present_value_total_cost / arrays['pop'][i] if present_value_total_cost > 0 else 0,
+                    "Benefits_Per_Person": present_value_total_benefits / arrays['pop'][0] if present_value_total_benefits > 0 else 0,
+                    "Costs_Per_Person": present_value_total_cost / arrays['pop'][0] if present_value_total_cost > 0 else 0,
                     "Total_Benefit": present_value_total_benefits,
                     "Total_Costs": present_value_total_cost,
                     "Cumulative_Total_Benefit": cumulative_present_value_total_benefit,
                     "Cumulative_Total_Cost": cumulative_present_value_total_cost,
-                    "Cumulative_Benefits_Per_Person": cumulative_present_value_total_benefit / arrays['pop'][i] if cumulative_present_value_total_benefit > 0 else 0,
-                    "Cumulative_Costs_Per_Person": cumulative_present_value_total_cost / arrays['pop'][i] if cumulative_present_value_total_cost > 0 else 0,
+                    "Cumulative_Benefits_Per_Person": cumulative_present_value_total_benefit / arrays['pop'][0] if cumulative_present_value_total_benefit > 0 else 0,
+                    "Cumulative_Costs_Per_Person": cumulative_present_value_total_cost / arrays['pop'][0] if cumulative_present_value_total_cost > 0 else 0,
                     "Benefit_to_Cost_Ratio": benefit_to_cost_ratio
                 })
 
@@ -672,7 +676,6 @@ with tab3:
                 yanchor='middle',
                 yref=y_ref  # Specify y-axis reference for each label
             )
-
         st.plotly_chart(fig)
         # Create pie charts of benefit and cost components
         if st.session_state.state_snapshots:
@@ -820,12 +823,17 @@ with tab4:
                 st.subheader(f"{component_type} Breakdown for {year}")
                 df = pd.DataFrame({
                     'Component': components.keys(),
-                    f'Value ({st.session_state.currency})': components.values()
+                    'Value': components.values()
                 })
                 if show_per_capita:
                     year_data = st.session_state.results_df[st.session_state.results_df['Year'] == year].iloc[0]
-                    df['Value'] = df['Value'] / year_data['Population']
-                st.table(df.style.format({'Value': '{:,.0f}'}).set_table_styles([
+                    population = st.session_state.urban_pop  # Use urban population from session state
+                    df['Value'] = df['Value'] / population
+                
+                # Format the Value column name with currency
+                df = df.rename(columns={'Value': f'Value ({st.session_state.currency})'})
+                
+                st.table(df.style.format({f'Value ({st.session_state.currency})': '{:,.0f}'}).set_table_styles([
                     {'selector': 'thead tr th:first-child', 'props': [('display', 'none')]}, 
                     {'selector': 'tbody tr th:first-child', 'props': [('display', 'none')]}
                 ]))

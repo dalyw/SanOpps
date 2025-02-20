@@ -20,16 +20,8 @@ def add_capital_cost(year, arrays, i, st_state):
     capital_cost_sewer_network = max(0, gap_sewer_network * st_state.sewer_const_cost)
     capital_cost_additional_stp = max(0, arrays['gap_treatment_capacity'][i] * st_state.stp_cost)
     
-    # FSTP costs
-    if st_state.co_treat_avail == "NO":
-        cost_fstp_total = max(0, arrays['septage_treated_per_day'][i] * st_state.cost_fstp) / 1000
-    else:
-        cost_fstp_total = max(0, arrays['septage_treated_per_day'][i] * st_state.cost_co_treatment) / 1000
-
-    # Training and awareness costs
-    officials_capacity_building = (st_state.percent_ulb_officials_trained/100) * arrays['pop'][i]
-    total_annual_cost_capacity_building = max(0, officials_capacity_building * st_state.training_cost)
-    total_awareness_cost = max(0, arrays['pop'][i] * st_state.awareness_cost)
+    # FSTP capital costs
+    capital_cost_fstp = max(0, arrays['septage_treated_per_day'][i] * st_state.fstp_cost) / 1000
 
     return {
         'Tap Water Supply': capital_cost_piped_water,
@@ -37,21 +29,25 @@ def add_capital_cost(year, arrays, i, st_state):
         'Public Toilets': total_capital_cost_pt,
         'Sewer': capital_cost_sewer_network,
         'Sewage Treatment Plant': capital_cost_additional_stp,
-        'Fecal Sludge Treatment Plant': cost_fstp_total,
-        'Training Officials': total_annual_cost_capacity_building,
-        'Public Awareness': total_awareness_cost
+        'Fecal Sludge Treatment Plant': capital_cost_fstp,
     }
 
 
 def add_operating_cost(i, arrays, st_state):
     """Calculate operating costs for post-construction years"""
     annual_maint_sewer_network_total = max(0, arrays['gap_sewer_network'][i] * st_state.sewer_maint_cost)
+
     annual_maint_stp_total = max(0, arrays['gap_treatment_capacity'][i] * st_state.stp_maint_cost)
-    annual_maint_fstp_total = max(0, arrays['septage_treated_per_day'][i] * st_state.fstp_maint_cost) / 1000
+
+    # FSTP operating costs including co-treatment if available
+    if st_state.co_treat_avail == "NO":
+        annual_maint_fstp_total = max(0, arrays['septage_treated_per_day'][i] * st_state.fstp_maint_cost) / 1000
+    else:
+        annual_maint_fstp_total = max(0, arrays['septage_treated_per_day'][i] * st_state.cost_co_treatment) / 1000
     
-    officials_capacity_building = (st_state.percent_ulb_officials_trained/100) * arrays['pop'][i]
+    officials_capacity_building = (st_state.percent_ulb_officials_trained / 100) * arrays['pop'][i]
     total_annual_cost_capacity_building = max(0, officials_capacity_building * st_state.training_cost)
-    total_awareness_cost = max(0, arrays['pop'][i] * st_state.awareness_cost)
+    total_awareness_cost = arrays['pop'][i] * st_state.awareness_cost
 
     return {
         'Sewer': annual_maint_sewer_network_total,
@@ -65,12 +61,14 @@ def add_operating_cost(i, arrays, st_state):
 def add_annual_benefit(i, arrays, st_state):
     """Calculate annual benefits"""
     # Health benefits
-    health_benefits = st_state.disease_incidence * (st_state.cost_per_visit + st_state.commute_cost_doctor) * 0.6
+    decreased_incidences = st_state.disease_incidence * st_state.disease_decrease_percent / 100
+    health_benefits = decreased_incidences * (st_state.cost_per_visit + st_state.commute_cost_doctor)
     
     # Productivity benefits
-    working_age_ratio = st_state.working_age_pop / 100
-    productivity_benefits_working = st_state.hourly_monetary_income * working_age_ratio * 5 * 8 * arrays['pop'][i] * 0.6
-    productivity_benefits_nonworking = st_state.hourly_monetary_income * (1 - working_age_ratio) * 5 * 8 * 0.15 * arrays['pop'][i]
+    # print(decreased_incidences)
+    working_age_ratio = st_state.working_age_pop_percent / 100
+    productivity_benefits_working = st_state.hourly_monetary_income * working_age_ratio * st_state.days_per_incidence * 8 * 0.6 * decreased_incidences
+    productivity_benefits_nonworking = st_state.hourly_monetary_income * (1 - working_age_ratio) * st_state.days_per_incidence * 8 * 0.15 * decreased_incidences
     
     # Time saved benefits
     time_saved_sanitation_working = st_state.hourly_monetary_income * working_age_ratio * 0.6 * (
@@ -87,8 +85,8 @@ def add_annual_benefit(i, arrays, st_state):
     )
     
     # Other benefits
-    recycled_water_benefits = st_state.wastewater_reuse_pct/100 * arrays['sewage_generated'][i] * 365 * 1000 * st_state.recycled_water_value
-    tourism_benefits = 0.091 * st_state.gdp_per_capita * arrays['pop'][i] * 0.1
+    recycled_water_benefits = st_state.wastewater_reuse_percent / 100 * arrays['sewage_generated'][i] * 365 * 1000 * st_state.recycled_water_value
+    tourism_benefits = st_state.tourism_contribution_percent / 100 * st_state.gdp_per_capita * arrays['pop'][i] * st_state.increase_gdp_tourism_percent / 100
 
     return {
         'Reduced Healtcare Costs': health_benefits,

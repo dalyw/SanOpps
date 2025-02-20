@@ -59,7 +59,7 @@ def create_pie_chart(components, title, colors):
     # Add title in center of donut
     fig.update_layout(
         showlegend=False,
-        height=350,
+        height=400,
         margin=dict(t=50, b=50, l=75, r=75),
         annotations=[dict(text=title.replace('\n', '<br>'), x=0.5, y=0.5, font_size=14, showarrow=False)]
     )
