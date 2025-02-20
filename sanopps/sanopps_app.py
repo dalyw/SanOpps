@@ -17,10 +17,13 @@ if read_local:
     variables = pd.read_csv('data/variables.csv')
     with open('sanopps/documentation.html', 'r') as f:
         doc_content = f.read()
+    with open('data/methodology.markdown', 'r') as f:
+        methodology_content = f.read()
 else:
     city_default_data = pd.read_csv('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/city_default_data.csv')
     variables = pd.read_csv('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/variables.csv')
     doc_content = requests.get('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/sanopps/documentation.html').text
+    methodology_content = requests.get('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/sanopps/data/methodology.markdown')
 
 st.title("SanOpps: The WASH Cost-Benefit Analysis Tool for Local Government")
 
@@ -873,11 +876,7 @@ with tab5:
     # Display HTML content directly using streamlit components
     components.html(doc_content, height=1200, scrolling=True)
     st.write("### Methodology")
-    
-    # Read and display methodology markdown content
-    with open('data/methodology.markdown', 'r') as f:
-        methodology_content = f.read()
-        st.markdown(methodology_content)
+    st.markdown(methodology_content)
     
 with tab6:
     st.write("For support with the SanOpps application, please contact the World Toilet Organization at ")
