@@ -1,98 +1,138 @@
-def add_capital_cost(year, arrays, i, st_state):
-    """Calculate capital costs for investment year"""
-    # Water supply capital costs
-    capital_cost_piped_water = arrays['urban_households_without_fhtc'][i] * st_state.fhtc_cost
-    
-    # Toilet capital costs
-    total_capital_cost_ct = arrays['additional_ct'][i] * st_state.capital_cost_wc
-    total_capital_cost_pt = arrays['additional_pt'][i] * st_state.capital_cost_wc
+def add_capital_cost_small(arrays, i, st_state):
+    """Calculate capital costs for small infrastructure:
+     -- functional household tap connections
+     -- toilets
 
-    # Sewer and treatment capital costs
-    if arrays['pop'][i] <= 20000:
-        sewer_length_per_person = st_state.sewer_length_small
-    elif arrays['pop'][i] <= 100000:
-        sewer_length_per_person = st_state.sewer_length_medium
-    else:
-        sewer_length_per_person = st_state.sewer_length_large
-        
-    sewer_network = (arrays['pop_connected_sewer'][i] * sewer_length_per_person) / 1000
-    gap_sewer_network = max(0, sewer_network - st_state.sewer_length)
-    capital_cost_sewer_network = max(0, gap_sewer_network * st_state.sewer_const_cost)
-    capital_cost_additional_stp = max(0, arrays['gap_treatment_capacity'][i] * st_state.stp_cost)
-    
-    # FSTP capital costs
-    capital_cost_fstp = max(0, arrays['septage_treated_per_day'][i] * st_state.fstp_cost) / 1000
+     Inputs:
+     arrays: state variables at each indexed year
+     i: index of investmeng year
+     st_state: current input variable state
+     """
+
+    # Water supply capital costs
+    urban_households_without_fhtc = arrays['urban_households'][i] - st_state.urban_households_with_fhtp
+
+    # Toilet capital costs
+    #   addition ct based on slum pop in investment year
+    additional_ct = max((arrays['slum_pop'][i] / st_state.persons_per_wc) - st_state.comm_toilets * st_state.wc_per_ct,0) 
+    #   addition pt based on floating pop in investment year
+    additional_pt = max((arrays['floating_pop'][i] / st_state.persons_per_pt) - st_state.public_toilets * st_state.wc_per_ct,0)
 
     return {
-        'Tap Water Supply': capital_cost_piped_water,
-        'Community Toilets': total_capital_cost_ct,
-        'Public Toilets': total_capital_cost_pt,
-        'Sewer': capital_cost_sewer_network,
-        'Sewage Treatment Plant': capital_cost_additional_stp,
+        'Tap Water Supply': urban_households_without_fhtc * st_state.fhtc_cost,
+        'Community Toilets': additional_ct * st_state.comm_toilet_cost,
+        'Public Toilets': additional_pt * st_state.public_toilet_cost,
+    }
+
+def add_capital_cost_large(arrays, i, st_state):
+    """Calculate capital costs for large infrastructure
+    -- sewer
+    -- STP
+    -- FSTP
+    -- septic
+    """
+            
+    capital_cost_fstp = (arrays['septage_treated_per_day'][i] * st_state.fstp_cost) / 1000
+
+    return {
+        'Sewer':  st_state.gap_sewer_network_km * st_state.sewer_const_cost,
+        'Sewage Treatment Plant': st_state.gap_treatment_capacity * st_state.stp_cost,
         'Fecal Sludge Treatment Plant': capital_cost_fstp,
     }
 
-
-def add_operating_cost(i, arrays, st_state):
-    """Calculate operating costs for post-construction years"""
-    annual_maint_sewer_network_total = max(0, arrays['gap_sewer_network'][i] * st_state.sewer_maint_cost)
-
-    annual_maint_stp_total = max(0, arrays['gap_treatment_capacity'][i] * st_state.stp_maint_cost)
-
-    # FSTP operating costs including co-treatment if available
-    if st_state.co_treat_avail == "NO":
-        annual_maint_fstp_total = max(0, arrays['septage_treated_per_day'][i] * st_state.fstp_maint_cost) / 1000
-    else:
-        annual_maint_fstp_total = max(0, arrays['septage_treated_per_day'][i] * st_state.cost_co_treatment) / 1000
+def add_capital_cost(arrays, i, st_state):
+    """Calculate total capital costs by combining small and large infrastructure costs"""
+    small_costs = add_capital_cost_small(arrays, i, st_state)
+    large_costs = add_capital_cost_large(arrays, i, st_state)
     
-    officials_capacity_building = (st_state.percent_ulb_officials_trained / 100) * arrays['pop'][i]
-    total_annual_cost_capacity_building = max(0, officials_capacity_building * st_state.training_cost)
-    total_awareness_cost = arrays['pop'][i] * st_state.awareness_cost
+    total_costs = {}
+    total_costs.update(small_costs)
+    total_costs.update(large_costs)
+    
+    return total_costs
 
-    return {
-        'Sewer': annual_maint_sewer_network_total,
-        'Sewage Treatment Plant': annual_maint_stp_total,
-        'Fecal Sludge Treatment Plant': annual_maint_fstp_total,
-        'Training Officials': total_annual_cost_capacity_building,
-        'Public Awareness': total_awareness_cost
+def add_operating_cost(i, arrays, st_state, current_year):
+    """Calculate operating costs based on construction completion"""
+    years_since_investment = current_year - st_state.investment_year
+    
+    # Initialize costs dictionary
+    costs = {
+        'Training Officials': 0,
+        'Public Awareness': 0,
+        'Sewer': 0,
+        'Sewage Treatment Plant': 0,
+        'Fecal Sludge Treatment Plant': 0
+    }
+    
+    # training starts immediately after investment
+    if years_since_investment >= 0:
+        officials_capacity_building = (st_state.percent_ulb_officials_trained / 100) * arrays['urban_pop'][i]
+        costs['Training Officials'] = max(0, officials_capacity_building * st_state.training_cost)
+        costs['Public Awareness'] = arrays['urban_pop'][i] * st_state.awareness_cost
+
+    # infrastructure operating costs for sewer and STP start after construction completed
+    if years_since_investment >= st_state.construction_time_large:
+        costs['Sewer'] = max(0,  st_state.gap_sewer_network_km * st_state.sewer_maint_cost)
+        costs['Sewage Treatment Plant'] = max(0, st_state.gap_treatment_capacity * st_state.stp_maint_cost)
+        
+        # FSTP operating costs including co-treatment if available
+        if st_state.co_treat_avail == "NO":
+            costs['Fecal Sludge Treatment Plant'] = max(0, arrays['septage_treated_per_day'][i] * st_state.fstp_maint_cost) / 1000
+        else:
+            costs['Fecal Sludge Treatment Plant'] = max(0, arrays['septage_treated_per_day'][i] * st_state.cost_co_treatment) / 1000
+
+    return costs
+
+def add_annual_benefit(i, arrays, st_state, current_year):
+    """Calculate annual benefits based on construction completion"""
+    years_since_investment = current_year - st_state.investment_year
+    
+    # Initialize benefits dictionary
+    benefits = {
+        'Reduced Healtcare Costs': 0,
+        'Productivity from Healthcare': 0,
+        'Water Collection Time Saved': 0,
+        'Sanitation Time Saved': 0,
+        'Recycled Water': 0,
+        'Tourism': 0
     }
 
-
-def add_annual_benefit(i, arrays, st_state):
-    """Calculate annual benefits"""
-    # Health benefits
+    # Calculate common values
     decreased_incidences = st_state.disease_incidence * st_state.disease_decrease_percent / 100
-    health_benefits = decreased_incidences * (st_state.cost_per_visit + st_state.commute_cost_doctor)
-    
-    # Productivity benefits
-    # print(decreased_incidences)
     working_age_ratio = st_state.working_age_pop_percent / 100
-    productivity_benefits_working = st_state.hourly_monetary_income * working_age_ratio * st_state.days_per_incidence * 8 * 0.6 * decreased_incidences
-    productivity_benefits_nonworking = st_state.hourly_monetary_income * (1 - working_age_ratio) * st_state.days_per_incidence * 8 * 0.15 * decreased_incidences
     
-    # Time saved benefits
-    time_saved_sanitation_working = st_state.hourly_monetary_income * working_age_ratio * 0.6 * (
-        st_state.sanitation_access_saved * arrays['pop'][i]
-    )
-    time_saved_sanitation_nonworking = st_state.hourly_monetary_income * (1 - working_age_ratio) * 0.15 * (
-        st_state.sanitation_access_saved * arrays['pop'][i]
-    )
-    time_saved_water_working = st_state.hourly_monetary_income * working_age_ratio * 0.6 * (
-        st_state.water_access_saved * arrays['urban_households'][i]
-    )
-    time_saved_water_nonworking = st_state.hourly_monetary_income * (1 - working_age_ratio) * 0.15 * (
-        st_state.water_access_saved * arrays['urban_households'][i]
-    )
-    
-    # Other benefits
-    recycled_water_benefits = st_state.wastewater_reuse_percent / 100 * arrays['sewage_generated'][i] * 365 * 1000 * st_state.recycled_water_value
-    tourism_benefits = st_state.tourism_contribution_percent / 100 * st_state.gdp_per_capita * arrays['pop'][i] * st_state.increase_gdp_tourism_percent / 100
+    # Small infrastructure benefits
+    if years_since_investment >= st_state.construction_time_small:
 
-    return {
-        'Reduced Healtcare Costs': health_benefits,
-        'Productivity from Healthcare': productivity_benefits_working + productivity_benefits_nonworking,
-        'Time Saved from Water Collection': time_saved_water_working + time_saved_water_nonworking,
-        'Time Saved from Sanitation Access': time_saved_sanitation_working + time_saved_sanitation_nonworking,
-        'Recycled Water': recycled_water_benefits,
-        'Tourism': tourism_benefits
-    }
+        benefits['Reduced Healtcare Costs'] = decreased_incidences * (st_state.cost_per_visit + st_state.commute_cost_doctor)
+
+        productivity_benefits_working = st_state.hourly_monetary_income * working_age_ratio * st_state.days_per_incidence * 8 * 0.6 * decreased_incidences
+        productivity_benefits_nonworking = st_state.hourly_monetary_income * (1 - working_age_ratio) * st_state.days_per_incidence * 8 * 0.15 * decreased_incidences
+        benefits['Productivity from Healthcare'] = productivity_benefits_working + productivity_benefits_nonworking
+
+        benefits['Recycled Water'] = max(
+            st_state.wastewater_reuse_percent / 100 * (st_state.final_pop_connected_sewer_percent - st_state.urban_pop_with_sewer_in_investment_year_percent) / 100 * arrays['urban_pop'][i] * 365 * 1000 * st_state.recycled_water_value,
+            0)
+        
+        time_saved_sanitation_working = st_state.hourly_monetary_income * working_age_ratio * 0.6 * (
+            st_state.sanitation_access_saved * arrays['urban_pop'][i]
+        )
+        time_saved_sanitation_nonworking = st_state.hourly_monetary_income * (1 - working_age_ratio) * 0.15 * (
+            st_state.sanitation_access_saved * arrays['urban_pop'][i]
+        )
+        time_saved_water_working = st_state.hourly_monetary_income * working_age_ratio * 0.6 * (
+            st_state.water_access_saved * arrays['urban_households'][i]
+        )
+        time_saved_water_nonworking = st_state.hourly_monetary_income * (1 - working_age_ratio) * 0.15 * (
+            st_state.water_access_saved * arrays['urban_households'][i]
+        )
+
+        benefits['Water Collection Time Saved'] = time_saved_water_working + time_saved_water_nonworking
+        benefits['Sanitation Time Saved'] = time_saved_sanitation_working + time_saved_sanitation_nonworking
+
+    # Large infrastructure benefits
+    if years_since_investment >= st_state.construction_time_large:
+        tourism_benefits = st_state.tourism_contribution_percent / 100 * st_state.gdp_per_capita * arrays['urban_pop'][i] * st_state.increase_gdp_tourism_percent / 100
+        benefits['Tourism'] = tourism_benefits
+
+    return benefits

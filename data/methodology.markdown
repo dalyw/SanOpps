@@ -1,29 +1,29 @@
 # Introduction
 
-[An understanding of the costs and benefits involved in developing and
+An understanding of the costs and benefits involved in developing and
 maintaining a proper sanitation system is essential for creating
 awareness about the economic impact of sanitation and convincing
-authorities to invest in universal coverage.]{.mark} Various studies
+authorities to invest in universal coverage. Various studies
 were conducted to estimate the costs and benefits of improved water and
 sanitation facilities at the global and country levels. However, there
 are no city-level studies that would help the policymakers and other
 stakeholders understand the benefits of diverting their investment into
 improving and expanding sanitation facilities.
 
-[The SanOpps Project focuses on tackling this by developing an
+The SanOpps Project focuses on tackling this by developing an
 innovative tool that will evaluate the costs and benefits that arise out
 of investing in sanitation projects in various parts of the
-world.]{.mark} SanOpps tool will be user-friendly and hosted in the form
+world. SanOpps tool will be user-friendly and hosted in the form
 of a website or a mobile application that makes sanitation costs and
 return on investments clear and makes nuanced information easy to absorb
 through visualizations.
 
 ## Objective
 
-This tool aims to [help investors at the city level understand the
+This tool aims to help investors at the city level understand the
 long-term economic and health benefits that arise from proper sanitation
-and]{.mark} encourage them to prioritize sanitation
-investments[.]{.mark}
+and encourage them to prioritize sanitation
+investments.
 
 ## Framework
 
@@ -58,7 +58,7 @@ dashboard.
 
 ## Costs calculation
 
--   The cost parameters taken into consideration are broadly divided
+The cost parameters taken into consideration are broadly divided
     into:
 
     -   Access to water
@@ -88,7 +88,7 @@ parameter are discussed below.
     figure below illustrates the definition of various sanitation
     facilities.
 
-> ![](media/image1.png){width="5.547434383202099in"
+> ![](images/ct_pt_wc_illustration.png){width="5.547434383202099in"
 > height="3.1756692913385827in"}
 
 -   It is assumed that the slum population decrease by 10% in the target
@@ -322,8 +322,6 @@ year. Below are the key components of the cost and benefit analysis:
     For this analysis, it is assumed that all capital expenditures are
     incurred by the base year.
 
-<!-- -->
-
 -   **Operational & maintenance Expenditure (OpEx):** These are
     recurring costs required for the regular operation of the
     infrastructure, including labor, energy, chemicals, and other
@@ -364,6 +362,6 @@ year. Below are the key components of the cost and benefit analysis:
 
 [^5]: ​​<https://documents1.worldbank.org/curated/en/820131468041640929/pdf/681590WSP0Box30UBLIC00WSP0esi0india.pdf>
 
-    <https://www.unicef.org/india/media/1221/file/Potential-Impact-of-Sanitation.pdf>
+[^6]: <https://www.unicef.org/india/media/1221/file/Potential-Impact-of-Sanitation.pdf>
 
-    <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1149071>
+[^7]: <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1149071>

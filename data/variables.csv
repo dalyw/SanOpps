@@ -1,61 +1,61 @@
-label,unit,key,type,category,value_type,percent_option,definition
-Construction Time,Years,construction_time,optional_input,Demographic and Growth Information,int,,The expected duration required to complete construction of planned sanitation infrastructure
-Currency,,currency,user_input,Demographic and Growth Information,str,,The monetary unit used for all financial calculations
-Current Year,,current_year,user_input,Demographic and Growth Information,int,,The current year for which data is being entered
-Investment Year,,investment_year,user_input,Demographic and Growth Information,int,,The year in which investments in sanitation infrastructure are planned to begin
-Urban Population,People,urban_pop,user_input,Demographic and Growth Information,int,,The total count of people living in urban areas within a city
-Slum Population,%,slum_pop_percent,user_input,Demographic and Growth Information,int,urban_pop,The overall number of people residing in slum areas within the city
-Floating Population,%,floating_pop_percent,user_input,Demographic and Growth Information,int,urban_pop,The transient population that moves between locations without permanent residence
-GDP per Capita,currency/Person-Year,gdp_per_capita,user_input,Demographic and Growth Information,float,,The average economic output per person per year
-10-year Population Growth Rate,%,growth_rate,optional_input,Demographic and Growth Information,float,,The projected percentage increase in population over a 10-year period
-Household Size,People,household_size,optional_input,Demographic and Growth Information,int,,The average number of people living in each household
-Inflation Rate,%,inflation,optional_input,Demographic and Growth Information,float,,The annual rate at which prices increase in the economy
-Contribution of Tourism to GDP,%,tourism_contribution_percent,user_input,Demographic and Growth Information,float,gdp_per_capita,The portion of GDP per capita attributed to tourism
-Number of Urban Households,Households,urban_households,user_input,Demographic and Growth Information,int,,The total count of households in urban areas within the city
-Working Age Population,%,working_age_pop_percent,user_input,Demographic and Growth Information,float,urban_pop,The percentage of population that is of working age
-Discount Rate,%,discount_rate,optional_input,Demographic and Growth Information,float,,
-Capital cost for Each WC in a CT,currency,capital_cost_wc,optional_input,Toilets,float,,
-Community Toilet Cost,currency/WC,comm_toilet_cost,optional_input,Toilets,float,,The cost per unit for constructing community toilets
-Community Toilets,Units,comm_toilets,user_input,Toilets,int,,The total number of community toilet facilities available
-Floating Population persons per PT,People,persons_per_pt,optional_input,Toilets,int,,
-Number of persons in slums for each CT,People,persons_per_wc,optional_input,Toilets,int,,
-Public Toilet Cost,currency/WC,public_toilet_cost,optional_input,Toilets,float,,The cost per unit for constructing public toilets
-Public Toilets,Units,public_toilets,user_input,Toilets,int,,The total number of public toilet facilities available
-Number of WC per CT block,Count,wc_per_ct,optional_input,Toilets,int,,
-Time saved from water collection (adjusted by FHTC proportion),HR/Household-Day,water_access_saved,optional_input,Health and Productivity,float,,
-FHTC Construction Cost,currency/household,fhtc_cost,optional_input,Drinking Water,float,,The cost per household for installing a functional household tap connection
-Households with Tap Water,%,urban_households_with_fhtp_percent,user_input,Drinking Water,float,urban_households,The percentage of urban households that have access to tap water connections
-Water Consumption Per Capita,LPCD,water_consumption,optional_input,Drinking Water,float,,The average daily water consumption per person in liters
-Disease Incidence,Cases/Year,disease_incidence,user_input,Health and Productivity,int,,The number of new cases of waterborne diseases reported annually
-Cost of Medical Treatment for Diahhreal Illness,currency/Instance,treatment_cost,optional_input,Health and Productivity,float,,The average cost of treating one case of diarrheal illness
-Co Treatment at STP Available?,,co_treat_avail,optional_input,Decentralized Treatment,str,,Whether co-treatment of septage is available at the STP
-Cost of Co-Treatment Facility at STP,currency/KL,cost_co_treatment,optional_input,Decentralized Treatment,float,,The cost per kiloliter for co-treatment facilities at STP
-Desludging Frequency,Years,desludging_freq,optional_input,Decentralized Treatment,float,,How often septic tanks need to be emptied
-FSTPs Available?,,fstp_avail,user_input,Decentralized Treatment,str,,Whether Fecal Sludge Treatment Plants are available
-FSTP Design Capacity,KLD,fstp_capacity,user_input,Decentralized Treatment,float,,The maximum volume of fecal sludge that can be treated per day
-FSTP Cost,currency/KL,fstp_cost,optional_input,Decentralized Treatment,float,,The cost per kiloliter of FSTP capacity
-FSTP Annual Maintenance,currency/KLD,fstp_maint_cost,optional_input,Decentralized Treatment,float,,The yearly maintenance cost per kiloliter per day of FSTP capacity
-Percentage of Gap to be Addressed by Sewer,%,sewer_vs_fstp_percent,user_input,Decentralized Treatment,slider,,The percentage of sanitation gap to be addressed through sewered systems
-Sewer Construction Cost,currency/Km,sewer_const_cost,optional_input,Centralized Treatment,float,,The cost per kilometer for constructing sewer lines
-Sewer Network Length,Km,sewer_length,user_input,Centralized Treatment,float,,The total length of sewer network in kilometers
-Sewer Annual Maintenance,currency/Km,sewer_maint_cost,optional_input,Centralized Treatment,float,,The yearly maintenance cost per kilometer of sewer network
-STP Design Capacity,MLD,stp_capacity,user_input,Centralized Treatment,float,,The maximum volume of sewage that the treatment plant can process per day
-STP Construction Cost,currency/MLD,stp_cost,optional_input,Centralized Treatment,float,,The cost per million liters per day of sewage treatment plant capacity
-STP Annual Maintenance,currency/MLD,stp_maint_cost,optional_input,Centralized Treatment,float,,The yearly maintenance cost per million liters per day of STP capacity
-Transportation Cost to Doctor,currency,commute_cost_doctor,optional_input,Centralized Treatment,float,,The average cost of transportation to medical facilities
-Current Sewer Connection,%,urban_households_with_sewer_percent,user_input,Centralized Treatment,float,urban_households,The percentage of households currently connected to the sewer network
-Projected Sewer Connection,%,urban_households_with_sewer_proj_percent,optional_input,Centralized Treatment,float,urban_households,The target percentage of households to be connected to sewer network
-ULB officials to be trained within Population,%,percent_ulb_officials_trained,optional_input,Training and Outreach,float,,
-Time saved from sanitation access (adjusted by CT proportion),HR/Person-Day,sanitation_access_saved,optional_input,Health and Productivity,float,,
-Septage emptied in household desludging,KL,septage_emptied_per_household,optional_input,Decentralized Treatment,float,,
-Sewer network length per person (pop > 100000),m/person,sewer_length_large,optional_input,Centralized Treatment,float,,
-Sewer network length per person (20000 < pop <= 100000),m/person,sewer_length_medium,optional_input,Centralized Treatment,float,,
-Sewer network length/person (pop <= 20000),m/person,sewer_length_small,optional_input,Centralized Treatment,float,,
-Public Awareness Cost,currency/Person,awareness_cost,optional_input,Training and Outreach,float,,The cost per person for public awareness campaigns
-Recycled Water Value,currency/KL,recycled_water_value,optional_input,Centralized Treatment,float,,The economic value per kiloliter of recycled water
-Community Training Cost,currency/Person,training_cost,optional_input,Training and Outreach,float,,The cost per person for community sanitation training
-Percent Decrease in Disease Incidence due to WASH,%,disease_decrease_percent,optional_input,Health and Productivity,float,,
-Days off Work Per Incidence,Count,days_per_incidence,optional_input,Health and Productivity,float,,
-Percent of Wastewater Reused,%,wastewater_reuse_percent,optional_input,Centralized Treatment,float,,
-Slum Population Percentage Decrease,%,slum_pop_percent_decrease,optional_input,Demographic and Growth Information,float,,
-Percentage increase in GDP due to Tourism,%,increase_gdp_tourism_percent,optional_input,Health and Productivity,float,,
+label,unit,key,type,category,value_type,percent_option,lower_bound,upper_bound,definition
+Construction Time for Large Infrastructure,Years,construction_time_large,optional_input,Demographic and Growth Information,int,,0,,The expected duration required to complete construction of planned sanitation infrastructure
+Construction Time for Small Infrastructure,Years,construction_time_small,optional_input,Demographic and Growth Information,int,,0,,The expected duration required to complete construction of planned sanitation infrastructure
+Currency, ,currency,user_input,Demographic and Growth Information,str,,,,The monetary unit used for all financial calculations
+Current Year, ,current_year,user_input,Demographic and Growth Information,int,,,,The current year for which data is being entered
+Investment Year, ,investment_year,user_input,Demographic and Growth Information,int,,current_year,,The year in which investments in sanitation infrastructure are planned to begin
+Urban Population,People,urban_pop,user_input,Demographic and Growth Information,int,,0,1000000000,The total count of people living in urban areas within a city
+Slum Population,%,slum_pop_percent,user_input,Demographic and Growth Information,int,urban_pop,0,urban_pop,The overall number of people residing in slum areas within the city
+Floating Population,%,floating_pop_percent,user_input,Demographic and Growth Information,int,urban_pop,0,urban_pop,The transient population that moves between locations without permanent residence
+Number of Urban Households,Households,urban_households,user_input,Demographic and Growth Information,int,,0,,The total count of households in urban areas within the city
+GDP per Capita,currency/Person-Year,gdp_per_capita,user_input,Demographic and Growth Information,float,,0,,The average economic output per person per year
+10-year Population Growth Rate,%,growth_rate,optional_input,Demographic and Growth Information,float,,0,100,The projected percentage increase in population over a 10-year period
+Inflation Rate,%,inflation,optional_input,Demographic and Growth Information,float,,0,100,The annual rate at which prices increase in the economy
+Contribution of Tourism to GDP,%,tourism_contribution_percent,user_input,Demographic and Growth Information,float,gdp_per_capita,,,The portion of GDP per capita attributed to tourism
+Working Age Population,%,working_age_pop_percent,user_input,Demographic and Growth Information,float,urban_pop,,,The percentage of population that is of working age
+Anticipated Slum Population Decrease by Investment Year,%,slum_pop_percent_decrease,optional_input,Demographic and Growth Information,float,slum_pop,0,,
+Community Toilet Installation Cost,currency/WC,comm_toilet_cost,optional_input,Toilets,float,,0,,The cost per unit for constructing community toilets
+Existing Community Toilets,WCs,comm_toilets,user_input,Toilets,int,,0,,The total number of community toilet facilities available
+Floating Population persons per PT,People,persons_per_pt,optional_input,Toilets,int,,0,,
+Number of persons in slums for each CT,People,persons_per_wc,optional_input,Toilets,int,,0,,
+Public Toilet Installation Cost,currency/WC,public_toilet_cost,optional_input,Toilets,float,,0,,The cost per unit for constructing public toilets
+Existing Public Toilets,WCs,public_toilets,user_input,Toilets,int,,0,,The total number of public toilet facilities available
+Number of WC per CT block,Count,wc_per_ct,optional_input,Toilets,int,,0,,
+FHTC Construction Cost,currency/household,fhtc_cost,optional_input,Drinking Water,float,,0,,The cost per household for installing a functional household tap connection
+Households with Tap Water,%,urban_households_with_fhtp_percent,user_input,Drinking Water,float,urban_households,0,households,The percentage of urban households that have access to tap water connections
+Water Consumption Per Capita,LPCD,water_consumption,optional_input,Drinking Water,float,,0,,The average daily water consumption per person in liters
+Co Treatment at STP Available?,,co_treat_avail,optional_input,Decentralized Treatment,str,,,,Whether co-treatment of septage is available at the STP
+Cost of Co-Treatment Facility at STP,currency/KL,cost_co_treatment,optional_input,Decentralized Treatment,float,,0,,The cost per kiloliter for co-treatment facilities at STP
+FSTPs Available?, ,fstp_avail,user_input,Decentralized Treatment,str,,,,Whether Fecal Sludge Treatment Plants are available
+FSTP Design Capacity,KLD,fstp_capacity,user_input,Decentralized Treatment,float,,0,,The maximum volume of fecal sludge that can be treated per day
+FSTP Cost,currency/KL,fstp_cost,optional_input,Decentralized Treatment,float,,0,,The cost per kiloliter of FSTP capacity
+FSTP Annual Maintenance,currency/KLD,fstp_maint_cost,optional_input,Decentralized Treatment,float,,0,,The yearly maintenance cost per kiloliter per day of FSTP capacity
+Percentage of Gap to be Addressed by Sewer,%,sewer_vs_fstp_percent,user_input,Decentralized Treatment,slider,,,,The percentage of sanitation gap to be addressed through sewered systems
+Sewer Construction Cost,currency/Km,sewer_const_cost,optional_input,Centralized Treatment,float,,0,,The cost per kilometer for constructing sewer lines
+Sewer Network Length,Km,sewer_length,user_input,Centralized Treatment,float,,0,,The total length of sewer network in kilometers
+Sewer Annual Maintenance,currency/Km,sewer_maint_cost,optional_input,Centralized Treatment,float,,,,The yearly maintenance cost per kilometer of sewer network
+STP Design Capacity,MLD,stp_capacity,user_input,Centralized Treatment,float,,,,The maximum volume of sewage that the treatment plant can process per day
+STP Construction Cost,currency/MLD,stp_cost,optional_input,Centralized Treatment,float,,,,The cost per million liters per day of sewage treatment plant capacity
+STP Annual Maintenance,currency/MLD,stp_maint_cost,optional_input,Centralized Treatment,float,,,,The yearly maintenance cost per million liters per day of STP capacity
+Transportation Cost to Doctor,currency,commute_cost_doctor,optional_input,Centralized Treatment,float,,,,The average cost of transportation to medical facilities
+Current Sewer Connection,%,urban_pop_with_sewer_percent,user_input,Centralized Treatment,float,urban_pop,,,The percentage of households currently connected to the sewer network
+Projected Sewer Connection,%,urban_pop_with_sewer_in_investment_year_percent,optional_input,Centralized Treatment,float,urban_pop,,,The target percentage of households to be connected to sewer network
+Recycled Water Value,currency/KL,recycled_water_value,optional_input,Centralized Treatment,float,,0,,The economic value per kiloliter of recycled water
+Percent of Wastewater Reused,%,wastewater_reuse_percent,optional_input,Centralized Treatment,float,,0,,
+Total Disease Incidence,Cases/Year,disease_incidence,user_input,Health and Productivity,float,,,,
+Disease Incidence in Working Age,Cases/Year,disease_incidence_working,user_input,Health and Productivity,float,disease_incidence,0,,The number of new cases of waterborne diseases reported annually
+Cost of Medical Treatment for Diahhreal Illness,currency/Instance,treatment_cost,optional_input,Health and Productivity,float,,0,,The average cost of treating one case of diarrheal illness
+Public Awareness Cost,currency/Person,awareness_cost,optional_input,Training and Outreach,float,,0,,The cost per person for public awareness campaigns
+Community Training Cost,currency/Person,training_cost,optional_input,Training and Outreach,float,,0,,The cost per person for community sanitation training
+Discount Rate,%,discount_rate,optional_input,Advanced Inputs,float,,,,
+Time saved from water collection (adjusted by FHTC proportion),HR/Household-Day,water_access_saved,optional_input,Advanced Inputs,float,,0,,
+Desludging Frequency,Years,desludging_freq,optional_input,Advanced Inputs,float,,0,30,How often septic tanks need to be emptied
+ULB officials to be trained within Population,%,percent_ulb_officials_trained,optional_input,Advanced Inputs,float,,,,
+Time saved from sanitation access (adjusted by CT proportion),HR/Person-Day,sanitation_access_saved,optional_input,Advanced Inputs,float,,0,,
+Septage emptied in household desludging,KL,septage_emptied_per_household,optional_input,Advanced Inputs,float,,0,,
+Sewer network length per person (pop > 100000),m/person,sewer_length_large,optional_input,Advanced Inputs,float,,0,,
+Sewer network length per person (20000 < pop <= 100000),m/person,sewer_length_medium,optional_input,Advanced Inputs,float,,0,,
+Sewer network length/person (pop <= 20000),m/person,sewer_length_small,optional_input,Advanced Inputs,float,,0,,
+Percent Decrease in Disease Incidence due to WASH,%,disease_decrease_percent,optional_input,Advanced Inputs,float,,0,,
+Days off Work Per Disease Incidence,Count,days_per_incidence,optional_input,Advanced Inputs,float,,0,,
+Percentage increase in GDP due to Tourism Following WASH Investment,%,increase_gdp_tourism_percent,optional_input,Advanced Inputs,float,,0,,

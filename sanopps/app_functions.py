@@ -60,7 +60,7 @@ def create_pie_chart(components, title, colors):
     fig.update_layout(
         showlegend=False,
         height=400,
-        margin=dict(t=50, b=50, l=75, r=75),
+        margin=dict(t=50, b=50, l=85, r=85),
         annotations=[dict(text=title.replace('\n', '<br>'), x=0.5, y=0.5, font_size=14, showarrow=False)]
     )
     

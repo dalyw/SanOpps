@@ -11,16 +11,16 @@ import plotly.graph_objects as go
 from cost_functions import *
 from app_functions import *
 
-read_local = False
+read_local = True
 if read_local:
-    city_default_data = pd.read_csv('data/city_default_data.csv')
+    city_defaults = pd.read_csv('data/city_defaults.csv')
     variables = pd.read_csv('data/variables.csv')
     with open('sanopps/documentation.html', 'r') as f:
         doc_content = f.read()
     with open('data/methodology.markdown', 'r') as f:
         methodology_content = f.read()
 else:
-    city_default_data = pd.read_csv('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/city_default_data.csv')
+    city_defaults = pd.read_csv('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/city_defaults.csv')
     variables = pd.read_csv('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/data/variables.csv')
     doc_content = requests.get('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/sanopps/documentation.html').text
     methodology_content = requests.get('https://raw.githubusercontent.com/dalyw/SanOpps/refs/heads/main/sanopps/data/methodology.markdown')
@@ -193,10 +193,20 @@ def generate_inputs(variables, category, input_type):
     
     for _, row in inputs.iterrows():
         name_col, input_col, units_col, percent_col = st.columns([1.2, 1.1, 1.0, 0.7])
+        key = row['key']
+        
         with name_col:
-            st.write(row['label'])
+            # Store the name placeholder to highlight if needed
+            name_placeholder = st.empty()
+            name_placeholder.write(row['label'])
+        with percent_col:
+            if pd.notna(row['percent_option']):
+                # Use the specific variable's key for the checkbox
+                percent_toggle = st.checkbox(f"Input as %", key=f"{key}_percent_toggle", value=row['unit']=='%')
+            else:
+                st.write("")
         with input_col:
-            key = row['key']
+            help_val = str(row['definition'])
             
             # Initialize with city data or default value if not already in session state
             if key not in st.session_state:
@@ -208,12 +218,10 @@ def generate_inputs(variables, category, input_type):
                             # For % default, store raw value without _percent
                             base_key = key.replace('_percent', '')
                             st.session_state[base_key] = st.session_state[key] / 100 * st.session_state.get(row['percent_option'], 1)
-                            print(row['percent_option'])
                         else:
                             # For raw default, store percent value with _percent
                             st.session_state[f"{key}_percent"] = st.session_state[key] / st.session_state.get(row['percent_option'], 1) * 100
                 else:
-                    print(key)
                     # Default values as fallback
                     if row['value_type'] == 'float':
                         st.session_state[key] = 1.0
@@ -228,18 +236,27 @@ def generate_inputs(variables, category, input_type):
                         st.session_state[base_key] = st.session_state[key] * st.session_state.get(row['percent_option'], 1) / 100
                     else:
                         st.session_state[f"{key}_percent"] = st.session_state[key] / st.session_state.get(row['percent_option'], 1) * 100
+
+            # Define common kwargs for all inputs
+            input_kwargs = {
+                'label_visibility': 'collapsed',
+                'help': help_val
+            }
             
             if key in ['currency', 'co_treat_avail', 'fstp_avail', 'co_treat_proposed']:
                 options = ["INR", "USD", "EUR"] if key == 'currency' else ["NO", "YES"]
-                # Ensure session state value is valid before using as index
                 current_value = st.session_state[key]
                 if current_value not in options:
                     current_value = options[0]
                     st.session_state[key] = current_value
                     
-                selected = st.selectbox(f"select_{key}", options, key=f"select_{key}", 
-                                     index=options.index(current_value),
-                                     label_visibility="collapsed")
+                selected = st.selectbox(
+                    f"select_{key}", 
+                    options,
+                    key=f"select_{key}",
+                    index=options.index(current_value),
+                    **input_kwargs
+                )
                 st.session_state[key] = selected
                 
                 if key == 'currency' and selected != st.session_state.get('prev_currency'):
@@ -256,50 +273,82 @@ def generate_inputs(variables, category, input_type):
                     
                     st.session_state.prev_currency = selected
             elif row['value_type'] == 'slider':
-                # Ensure value is numeric before using in slider
                 try:
                     current_value = float(st.session_state[key])
                 except (ValueError, TypeError):
                     current_value = 0.0
                     st.session_state[key] = current_value
                     
-                value = st.slider(f"slider_{key}", 
-                                min_value=0.0, 
-                                max_value=100.0,
-                                value=current_value,
-                                label_visibility="collapsed",
-                                key=f"slider_{key}")
+                value = st.slider(
+                    f"slider_{key}",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=current_value,
+                    **input_kwargs
+                )
                 st.session_state[key] = value
             else:
                 if pd.notna(row['percent_option']):
-                    percent_toggle = st.session_state.get(f"{key}_percent_toggle", row['unit'] == '%')
+                    # Get previous toggle state and percent option value
+                    prev_toggle = st.session_state.get(f"{key}_prev_toggle", percent_toggle)
+                    percent_option_value = st.session_state.get(row['percent_option'], 1)
+                    
+                    # Calculate display value based on toggle state
                     if percent_toggle:
-                        value = st.number_input(
-                            f"percent_{key}",
-                            value=float(st.session_state[key+"_percent"] if not row['unit'] == '%' else st.session_state[key]),
-                            label_visibility="collapsed",
-                            key=f"percent_{key}"
-                        )
-                        if row['unit'] == '%':
-                            st.session_state[key] = value
-                            base_key = key.replace('_percent', '')
-                            st.session_state[base_key] = value * st.session_state.get(row['percent_option'], 1) / 100
-                        else:
-                            st.session_state[key+"_percent"] = value
-                            st.session_state[key] = value * st.session_state.get(row['percent_option'], 1) / 100
+                        if not prev_toggle:  # Switching from base to percent
+                            display_value = st.session_state[key] / percent_option_value * 100
+                        else:  # Already in percent
+                            display_value = st.session_state[key]
                     else:
-                        if row['value_type'] == 'int':
-                            value = st.number_input(f"direct_{key}", value=int(st.session_state[key]), label_visibility="collapsed", key=f"direct_{key}")
-                        else:
-                            value = st.number_input(f"direct_{key}", value=float(st.session_state[key]), label_visibility="collapsed", key=f"direct_{key}")
-                        st.session_state[key] = value
-                        st.session_state[key+"_percent"] = value/st.session_state.get(row['percent_option'], 1)*100
+                        if prev_toggle:  # Switching from percent to base
+                            display_value = st.session_state[key] * percent_option_value / 100
+                        else:  # Already in base
+                            display_value = st.session_state[key]
+
+                    # Create number input with calculated display value
+                    if row['value_type'] == 'int':
+                        value = st.number_input(
+                            f"direct_{key}",
+                            value=int(display_value),
+                            key=f"direct_{key}_{percent_toggle}",  # Add toggle state to key to force refresh
+                            **input_kwargs
+                        )
+                    else:
+                        value = st.number_input(
+                            f"direct_{key}",
+                            value=float(display_value),
+                            key=f"direct_{key}_{percent_toggle}",  # Add toggle state to key to force refresh
+                            **input_kwargs
+                        )
+                    
+                    # Store the value and update related values
+                    if percent_toggle:
+                        st.session_state[key] = value  # Store percent value
+                        st.session_state[key.replace('_percent', '')] = value * percent_option_value / 100  # Store base value
+                    else:
+                        st.session_state[key] = value  # Store base value
+                        st.session_state[f"{key}_percent"] = value / percent_option_value * 100  # Store percent value
+                    
+                    # Update toggle state for next render
+                    st.session_state[f"{key}_prev_toggle"] = percent_toggle
+
                 else:
                     if row['value_type'] == 'int':
-                        value = st.number_input(f"input_{key}", value=int(st.session_state[key]), label_visibility="collapsed", key=f"input_{key}")
+                        value = st.number_input(
+                            f"input_{key}",
+                            value=int(st.session_state[key]),
+                            key=f"input_{key}",
+                            **input_kwargs
+                        )
                     else:
-                        value = st.number_input(f"input_{key}", value=float(st.session_state[key]), label_visibility="collapsed", key=f"input_{key}")
+                        value = st.number_input(
+                            f"input_{key}",
+                            value=float(st.session_state[key]),
+                            key=f"input_{key}",
+                            **input_kwargs
+                        )
                     st.session_state[key] = value
+
         with units_col:
             if pd.notna(row['percent_option']):
                 if st.session_state.get(f"{key}_percent_toggle", row['unit'] == '%'):
@@ -317,12 +366,7 @@ def generate_inputs(variables, category, input_type):
                 st.write(row['unit'].replace('currency', st.session_state.currency) if 'currency' in str(row['unit']) else row['unit'])
             else:
                 st.write("")
-        with percent_col:
-            if pd.notna(row['percent_option']):
-                st.checkbox(f"Input as %", key=f"{key}_percent_toggle", value=row['unit']=='%')
-            else:
-                st.write("")
-                        
+                
 with tab2:
     st.markdown("Please enter data below. All data inputs (including population, financial, and current infrastucture) should be entered for the *current* year")
     col1, col2 = st.columns(2)
@@ -335,16 +379,16 @@ with tab2:
 
     country_col, state_col, city_col, reset_col = st.columns([1,1,1,0.5])
     with country_col:
-        country = st.selectbox("Select Country", list(city_default_data['Country'].unique()), key="country")
+        country = st.selectbox("Select Country", list(city_defaults['Country'].unique()), key="country")
     with state_col:
-        state = st.selectbox("Select State/Province", list(city_default_data[city_default_data['Country'] == country]['State/Province'].unique()), key="state")
+        state = st.selectbox("Select State/Province", list(city_defaults[city_defaults['Country'] == country]['State/Province'].unique()), key="state")
     with city_col:
-        city = st.selectbox("Select City", list(city_default_data[(city_default_data['Country'] == country) & (city_default_data['State/Province'] == state)]['City'].unique()), key="city")
+        city = st.selectbox("Select City", list(city_defaults[(city_defaults['Country'] == country) & (city_defaults['State/Province'] == state)]['City'].unique()), key="city")
         
         # Only update values from city data if city has changed
         if city != st.session_state.get('prev_city'):
-            if city in city_default_data['City'].values:
-                city_data = city_default_data[city_default_data['City'] == city].iloc[0]
+            if city in city_defaults['City'].values:
+                city_data = city_defaults[city_defaults['City'] == city].iloc[0]
                 st.session_state.city_data = city_data.to_dict()
                 # Update all values from city data
                 for key in city_data.keys():
@@ -356,7 +400,7 @@ with tab2:
             st.session_state.prev_city = city
 
     with reset_col:
-        if st.button("Reset City") and city in city_default_data['City'].values:
+        if st.button("Reset City") and city in city_defaults['City'].values:
             if 'city_data' in st.session_state:
                 for key, value in st.session_state.city_data.items():
                     st.session_state[key] = value
@@ -382,68 +426,70 @@ with tab2:
                 if key not in ['summary_data', 'results_df', 'prev_city', 'city_data']:
                     empty_inputs.append(key)
 
-        # Check for negative values
-        negative_inputs = []
+        # Check for negative values and bounds
+        out_of_bounds_inputs = []
         for key, value in st.session_state.items():
-            if isinstance(value, (int, float)) and value < 0:
-                negative_inputs.append(key)
+            if key in variables['key'].values:
+                row = variables[variables['key'] == key].iloc[0]
+                
+                # Get lower bound
+                lower_bound = 0
+                if pd.notna(row['lower_bound']):
+                    if isinstance(row['lower_bound'], (int, float)):
+                        lower_bound = row['lower_bound']
+                    elif isinstance(row['lower_bound'], str):
+                        lower_bound = st.session_state.get(row['lower_bound'], 0)
+                
+                # Get upper bound
+                upper_bound = float('inf')
+                if pd.notna(row['upper_bound']):
+                    if isinstance(row['upper_bound'], (int, float)):
+                        upper_bound = row['upper_bound']
+                    elif isinstance(row['upper_bound'], str):
+                        upper_bound = st.session_state.get(row['upper_bound'], float('inf'))
+                
+                # For percent units, enforce 0-100 bounds
+                if row['unit'] == '%':
+                    lower_bound = 0
+                    upper_bound = 100
+                # Check bounds
+                if isinstance(value, (int, float)):
+                    # inputs = variables
+                    if value < lower_bound or value > upper_bound:
+                        out_of_bounds_inputs.append(key)
+                        # We can't access the name_col from generate_inputs() here
+                        # Instead we'll need to handle the highlighting when generating inputs
+                        pass
 
         if empty_inputs:
             st.error("Please fill in all inputs before proceeding")
-        elif negative_inputs:
-            st.error(f"The following inputs cannot be negative: {', '.join(negative_inputs)}")
+        elif out_of_bounds_inputs:
+            st.error(f"The following inputs are outside their allowed bounds: {', '.join(out_of_bounds_inputs)}")
         else:
             # Initialize lists to store results for each year
             years = list(range(st.session_state.current_year, 2061))
             benefit_to_cost_ratios, results_data, state_snapshots = [], [], []
 
-            # Calculate base values
-            gdp = st.session_state.gdp_per_capita * st.session_state.urban_pop
+            st.session_state.gdp = st.session_state.gdp_per_capita * st.session_state.urban_pop
             st.session_state.hourly_monetary_income = st.session_state.gdp_per_capita/(8*5*52) # 8 hours per day, 5 days per week, 52 weeks per year
 
-            # Population projections
             n_years = [(year - st.session_state.current_year) / 10 for year in years]
-            
-            # Create arrays dictionary
             arrays = {}
+
             # Population arrays
-            arrays['pop'] = [st.session_state.urban_pop * (1 + st.session_state.growth_rate/100) ** n for n in n_years]
-            slum_pop_percent_projected = max(st.session_state.slum_pop_percent-st.session_state.slum_pop_percent_decrease,0)
-            arrays['slum_pop'] = [(slum_pop_percent_projected / 100) * pop for pop in arrays['pop']]
-            arrays['floating_pop'] = [(st.session_state.floating_pop_percent / 100) * pop for pop in arrays['pop']]
-            household_ratio = st.session_state.urban_pop / st.session_state.urban_households
-            arrays['urban_households'] = [pop / household_ratio for pop in arrays['pop']]
-            
-            # Water connections array
-            arrays['urban_households_without_fhtc'] = [households - st.session_state.urban_households_with_fhtp for households in arrays['urban_households']]
-
-            # Toilet calculations
-            arrays['ct'] = [slum_pop / st.session_state.persons_per_wc for slum_pop in arrays['slum_pop']]
-            arrays['pt'] = [floating_pop / st.session_state.persons_per_pt for floating_pop in arrays['floating_pop']]
-            arrays['additional_ct'] = [max(ct - st.session_state.comm_toilets * st.session_state.wc_per_ct,0) for ct in arrays['ct']]
-            arrays['additional_pt'] = [max(pt - st.session_state.public_toilets * st.session_state.wc_per_ct,0) for pt in arrays['pt']]
-
-            # Sewer calculations
-            arrays['pop_connected_sewer'] = [(st.session_state.urban_households_with_sewer_percent/100) * pop for pop in arrays['pop']]
-            if st.session_state.urban_households_with_sewer_percent == 0 or st.session_state.urban_pop == 0:
-                sewer_length_per_person = 0
-            else:
-                sewer_length_per_person = st.session_state.sewer_length / ((st.session_state.urban_households_with_sewer_percent/100) * st.session_state.urban_pop)
-
+            for key in ['urban_pop', 'urban_households']:
+                arrays[key] = [st.session_state[key] * (1 + st.session_state.growth_rate/100) ** n for n in n_years]
+            st.session_state.slum_pop_percent_in_investment_year = max(st.session_state.slum_pop_percent-st.session_state.slum_pop_percent_decrease,0)
+            arrays['slum_pop'] = [(st.session_state.slum_pop_percent_in_investment_year / 100) * pop for pop in arrays['urban_pop']]
+            arrays['floating_pop'] = [(st.session_state.floating_pop_percent / 100) * pop for pop in arrays['urban_pop']]
+            st.session_state.household_size = st.session_state.urban_pop / st.session_state.urban_households
+                        
             # Split treatment gap between sewer and FSTP based on sewer_vs_fstp_percent
-            sewer_fraction = st.session_state.sewer_vs_fstp_percent / 100
-            fstp_fraction = 1 - sewer_fraction
+            st.session_state.sewer_fraction = st.session_state.sewer_vs_fstp_percent / 100
+            st.session_state.fstp_fraction = 1 - st.session_state.sewer_fraction
 
-            # Calculate sewer network needs based on sewer fraction
-            arrays['sewer_network'] = [(pop * sewer_length_per_person * sewer_fraction) / 1000 for pop in arrays['pop_connected_sewer']]
-            arrays['gap_sewer_network'] = [max(0, network - st.session_state.sewer_length) for network in arrays['sewer_network']]
-            
-            # Treatment capacity calculations split by fraction
-            arrays['sewage_generated'] = [(1-st.session_state.wastewater_reuse_percent / 100) * pop * st.session_state.water_consumption / 1000000 for pop in arrays['pop_connected_sewer']]
-            arrays['gap_treatment_capacity'] = [max(0, sewage * sewer_fraction - st.session_state.stp_capacity) for sewage in arrays['sewage_generated']]
-            
             # FSTP calculations based on FSTP fraction
-            arrays['households_septic_tanks'] = [households * (1 - st.session_state.urban_households_with_sewer_percent/100) * fstp_fraction for households in arrays['urban_households']]
+            arrays['households_septic_tanks'] = [households * (1 - st.session_state.urban_pop_with_sewer_percent/100) * st.session_state.fstp_fraction for households in arrays['urban_households']]
             arrays['septage_treated_per_day'] = [(households * st.session_state.septage_emptied_per_household) / (st.session_state.desludging_freq * 300) for households in arrays['households_septic_tanks']]
 
             # Initialize component dictionaries
@@ -455,7 +501,7 @@ with tab2:
 
             benefit_components = dict.fromkeys([
                 'Reduced Healtcare Costs', 'Productivity from Healthcare',
-                'Time Saved from Water Collection', 'Time Saved from Sanitation Access',
+                'Water Collection Time Saved', 'Sanitation Time Saved',
                 'Recycled Water', 'Tourism'
             ], 0)
 
@@ -466,30 +512,41 @@ with tab2:
 
             # Loop through years for cost-benefit calculations
             for i, year in enumerate(years):
-                present_value_total_cost = 0
-                present_value_total_benefits = 0
+                present_value_total_cost, present_value_total_benefits = 0, 0
+
                 inflation_factor = (1 + st.session_state.inflation/100) ** (year - st.session_state.current_year)
                 discount_factor = 1 / ((1 + st.session_state.discount_rate/100) ** (year - st.session_state.current_year))
                 overall_factor = inflation_factor * discount_factor
-                print(overall_factor)
 
                 # Add capital costs only in investment year
                 if year == st.session_state.investment_year:
-                    cost_components = add_capital_cost(year, arrays, i, st.session_state)
-                    print(cost_components)
+
+                    # Determine sewer length per person based on population
+                    if arrays['urban_pop'][i] <= 20000:
+                        sewer_length_per_person = st.session_state.sewer_length_small
+                    elif arrays['urban_pop'][i] <= 100000:
+                        sewer_length_per_person = st.session_state.sewer_length_medium
+                    else:
+                        sewer_length_per_person = st.session_state.sewer_length_large
+
+                    st.session_state.additional_pop_connected_sewer = arrays['urban_pop'][i] * st.session_state.sewer_fraction * (1 - st.session_state.urban_pop_with_sewer_in_investment_year_percent / 100)
+                    st.session_state.final_pop_connected_sewer_percent = (st.session_state.additional_pop_connected_sewer + st.session_state.urban_pop_with_sewer_percent/100 * st.session_state.urban_pop) / st.session_state.urban_pop
+                    st.session_state.gap_sewer_network_km = max(0, (st.session_state.additional_pop_connected_sewer * sewer_length_per_person) / 1000)
+                    
+                    # Calculate treatment plant costs
+                    new_sewage_treatment_vol = st.session_state.additional_pop_connected_sewer * st.session_state.water_consumption / 1000000
+                    existing_sewage_treatment_vol = ((st.session_state.urban_pop_with_sewer_percent/100) * st.session_state.urban_pop) * st.session_state.water_consumption / 1000000
+                    total_sewage_treatment_vol = new_sewage_treatment_vol + existing_sewage_treatment_vol
+                    st.session_state.gap_treatment_capacity = max(0, total_sewage_treatment_vol - st.session_state.stp_capacity)
+                    
+                    cost_components = add_capital_cost(arrays, i, st.session_state)
                     present_value_total_cost = sum(cost_components.values()) * overall_factor
                     cumulative_present_value_total_cost = present_value_total_cost
 
-                # Add opearting costs before benefits commence
-                elif year < st.session_state.investment_year + st.session_state.construction_time:
-                    cost_components = add_operating_cost(i, arrays, st.session_state)
-                    print(cost_components)
-                    present_value_total_cost = sum(cost_components.values()) * overall_factor
-
                 # Add operating costs and benefits after investment year
-                elif year > st.session_state.investment_year + st.session_state.construction_time:
-                    cost_components = add_operating_cost(i, arrays, st.session_state)
-                    benefit_components = add_annual_benefit(i, arrays, st.session_state)
+                else:
+                    cost_components = add_operating_cost(i, arrays, st.session_state, year)
+                    benefit_components = add_annual_benefit(i, arrays, st.session_state, year)
 
                     present_value_total_cost = sum(cost_components.values()) * overall_factor
                     present_value_total_benefits = sum(benefit_components.values()) * overall_factor
@@ -520,14 +577,14 @@ with tab2:
                 # Store results
                 results_data.append({
                     "Year": year,
-                    "Benefits_Per_Person": present_value_total_benefits / arrays['pop'][0] if present_value_total_benefits > 0 else 0,
-                    "Costs_Per_Person": present_value_total_cost / arrays['pop'][0] if present_value_total_cost > 0 else 0,
+                    "Benefits_Per_Person": present_value_total_benefits / arrays['urban_pop'][0] if present_value_total_benefits > 0 else 0,
+                    "Costs_Per_Person": present_value_total_cost / arrays['urban_pop'][0] if present_value_total_cost > 0 else 0,
                     "Total_Benefit": present_value_total_benefits,
                     "Total_Costs": present_value_total_cost,
                     "Cumulative_Total_Benefit": cumulative_present_value_total_benefit,
                     "Cumulative_Total_Cost": cumulative_present_value_total_cost,
-                    "Cumulative_Benefits_Per_Person": cumulative_present_value_total_benefit / arrays['pop'][0] if cumulative_present_value_total_benefit > 0 else 0,
-                    "Cumulative_Costs_Per_Person": cumulative_present_value_total_cost / arrays['pop'][0] if cumulative_present_value_total_cost > 0 else 0,
+                    "Cumulative_Benefits_Per_Person": cumulative_present_value_total_benefit / arrays['urban_pop'][0] if cumulative_present_value_total_benefit > 0 else 0,
+                    "Cumulative_Costs_Per_Person": cumulative_present_value_total_cost / arrays['urban_pop'][0] if cumulative_present_value_total_cost > 0 else 0,
                     "Benefit_to_Cost_Ratio": benefit_to_cost_ratio
                 })
 
@@ -749,7 +806,20 @@ with tab4:
     if not st.session_state.get('calculations_done', False):
         st.warning('Please click "Submit" on Input Parameters tab')
     else:
-        # Add dropdown for value type selection
+
+        # Get benefit-to-cost ratio for 10 years after investment year
+        ten_year_ratio = None
+        investment_year = st.session_state.investment_year
+        target_year = investment_year + 10
+        
+        year_data = st.session_state.results_df[st.session_state.results_df['Year'] == target_year]
+        if not year_data.empty:
+            ten_year_ratio = year_data.iloc[0]['Benefit_to_Cost_Ratio']
+            
+        if ten_year_ratio:
+            st.info(f"1 {st.session_state.currency} of sanitation investment will yield {ten_year_ratio:.1f} {st.session_state.currency} of return in 10 years")
+        
+                # Add dropdown for value type selection
         value_type_2 = st.selectbox(
             "Select value type",
             ["City-wide values", "Per capita values"],
@@ -773,8 +843,8 @@ with tab4:
                 if show_per_capita_2:
                     row = {
                         'Year': year,
-                        'Benefits': year_data['Benefits_Per_Person'],
-                        'Total Costs': year_data['Costs_Per_Person'],
+                        f'Per-capita Benefits ({st.session_state.currency})': year_data['Benefits_Per_Person'],
+                        f'Per-capita Costs ({st.session_state.currency})': year_data['Costs_Per_Person'],
                         'Ratio': year_data["Benefit_to_Cost_Ratio"]
                     }
                 else:
@@ -807,17 +877,22 @@ with tab4:
             col1, col2 = st.columns(2)
             
             with col1:
-                benefits_text = "Hide Benefits Breakdown" if st.session_state.get('show_benefits', False) else "Show Benefits Breakdown"
-                show_benefits = st.button(benefits_text)
-            with col2:
-                costs_text = "Hide Costs Breakdown" if st.session_state.get('show_costs', False) else "Show Costs Breakdown"
-                show_costs = st.button(costs_text)
+                # Update text based on current state before button click
+                if 'show_benefits' not in st.session_state:
+                    st.session_state.show_benefits = False
+                benefits_text = "Hide Benefits Breakdown" if st.session_state.show_benefits else "Show Benefits Breakdown"
+                if st.button(benefits_text, key="benefits_button"):
+                    st.session_state.show_benefits = not st.session_state.show_benefits
+                    st.rerun()
 
-            # Store button states in session state
-            if show_benefits:
-                st.session_state.show_benefits = not st.session_state.get('show_benefits', False)
-            if show_costs:
-                st.session_state.show_costs = not st.session_state.get('show_costs', False)
+            with col2:
+                # Update text based on current state before button click
+                if 'show_costs' not in st.session_state:
+                    st.session_state.show_costs = False
+                costs_text = "Hide Costs Breakdown" if st.session_state.show_costs else "Show Costs Breakdown"
+                if st.button(costs_text, key="costs_button"):
+                    st.session_state.show_costs = not st.session_state.show_costs
+                    st.rerun()
 
             def generate_breakdown_table(components, year, component_type, show_per_capita):
                 """Generate breakdown table for benefits or costs"""
@@ -839,7 +914,7 @@ with tab4:
                     {'selector': 'tbody tr th:first-child', 'props': [('display', 'none')]}
                 ]))
 
-            if st.session_state.get('show_benefits', False) or st.session_state.get('show_costs', False):
+            if st.session_state.show_benefits or st.session_state.show_costs:
                 # Create container for year selection
                 year_select_container = st.container()
                 
@@ -856,7 +931,7 @@ with tab4:
 
                 with tables_container:
                     # Show benefits breakdown if button clicked
-                    if st.session_state.get('show_benefits', False):
+                    if st.session_state.show_benefits:
                         selected_benefits = None
                         for snapshot in st.session_state.state_snapshots:
                             if snapshot['year'] == selected_year and snapshot.get('cumulative_benefit_components'):
@@ -867,7 +942,7 @@ with tab4:
                             generate_breakdown_table(selected_benefits, selected_year, "Benefits", show_per_capita_2)
 
                     # Show costs breakdown if button clicked
-                    if st.session_state.get('show_costs', False):
+                    if st.session_state.show_costs:
                         selected_costs = None
                         for snapshot in st.session_state.state_snapshots:
                             if snapshot['year'] == selected_year and snapshot.get('cumulative_cost_components'):
@@ -880,12 +955,14 @@ with tab4:
             st.warning("No data available for summary years")
 
 with tab5:
-    st.write("### Sanitation Variables Glossary")
+    with st.expander("Glossary"):
+        st.write("#### Sanitation Variables Glossary")
+        components.html(doc_content, height=1200, scrolling=True)
         
-    # Display HTML content directly using streamlit components
-    components.html(doc_content, height=1200, scrolling=True)
-    st.write("### Methodology")
-    st.markdown(methodology_content)
+    with st.expander("Methodology"):
+        # Display HTML content directly using streamlit components
+       
+        st.markdown(methodology_content)
     
 with tab6:
-    st.write("For support with the SanOpps application, please contact the World Toilet Organization at ")
+    st.write("For support with the SanOpps application, please contact the World Toilet Organization at https://worldtoilet.org")
