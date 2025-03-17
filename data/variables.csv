@@ -24,7 +24,7 @@ Number of WC per CT block,Count,wc_per_ct,optional_input,Toilets,int,,0,,
 FHTC Construction Cost,currency/household,fhtc_cost,optional_input,Drinking Water,float,,0,,The cost per household for installing a functional household tap connection
 Households with Tap Water,%,urban_households_with_fhtp_percent,user_input,Drinking Water,float,urban_households,0,households,The percentage of urban households that have access to tap water connections
 Water Consumption Per Capita,LPCD,water_consumption,optional_input,Drinking Water,float,,0,,The average daily water consumption per person in liters
-Co Treatment at STP Available?,,co_treat_avail,optional_input,Decentralized Treatment,str,,,,Whether co-treatment of septage is available at the STP
+Co Treatment at STP Available?,,co_treat_avail,user_input,Decentralized Treatment,str,,,,Whether co-treatment of septage is available at the STP
 Cost of Co-Treatment Facility at STP,currency/KL,cost_co_treatment,optional_input,Decentralized Treatment,float,,0,,The cost per kiloliter for co-treatment facilities at STP
 FSTPs Available?, ,fstp_avail,user_input,Decentralized Treatment,str,,,,Whether Fecal Sludge Treatment Plants are available
 FSTP Design Capacity,KLD,fstp_capacity,user_input,Decentralized Treatment,float,,0,,The maximum volume of fecal sludge that can be treated per day
@@ -37,7 +37,7 @@ Sewer Annual Maintenance,currency/Km,sewer_maint_cost,optional_input,Centralized
 STP Design Capacity,MLD,stp_capacity,user_input,Centralized Treatment,float,,,,The maximum volume of sewage that the treatment plant can process per day
 STP Construction Cost,currency/MLD,stp_cost,optional_input,Centralized Treatment,float,,,,The cost per million liters per day of sewage treatment plant capacity
 STP Annual Maintenance,currency/MLD,stp_maint_cost,optional_input,Centralized Treatment,float,,,,The yearly maintenance cost per million liters per day of STP capacity
-Transportation Cost to Doctor,currency,commute_cost_doctor,optional_input,Centralized Treatment,float,,,,The average cost of transportation to medical facilities
+Transportation Cost to Doctor,currency,commute_cost_doctor,optional_input,Health and Productivity,float,,,,The average cost of transportation to medical facilities
 Current Sewer Connection,%,urban_pop_with_sewer_percent,user_input,Centralized Treatment,float,urban_pop,,,The percentage of households currently connected to the sewer network
 Projected Sewer Connection,%,urban_pop_with_sewer_in_investment_year_percent,optional_input,Centralized Treatment,float,urban_pop,,,The target percentage of households to be connected to sewer network
 Recycled Water Value,currency/KL,recycled_water_value,optional_input,Centralized Treatment,float,,0,,The economic value per kiloliter of recycled water
