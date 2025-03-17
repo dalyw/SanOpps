@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 from cost_functions import *
 from app_functions import *
 
-read_local = True
+read_local = False
 if read_local:
     city_defaults = pd.read_csv('data/city_defaults.csv')
     variables = pd.read_csv('data/variables.csv')
@@ -293,16 +293,28 @@ def generate_inputs(variables, category, input_type):
                     prev_toggle = st.session_state.get(f"{key}_prev_toggle", percent_toggle)
                     percent_option_value = st.session_state.get(row['percent_option'], 1)
                     
+                    # Determine if this is a percent variable (ends with _percent or has unit %)
+                    is_percent_var = key.endswith('_percent') or row['unit'] == '%'
+                    
                     # Calculate display value based on toggle state
                     if percent_toggle:
-                        if not prev_toggle:  # Switching from base to percent
-                            display_value = st.session_state[key] / percent_option_value * 100
-                        else:  # Already in percent
+                        # When showing as percent
+                        if is_percent_var:
+                            # For percent variables, show the percent value directly
                             display_value = st.session_state[key]
+                        else:
+                            # For base variables, calculate and show the percent equivalent
+                            display_value = st.session_state.get(f"{key}_percent", 
+                                           st.session_state[key] / percent_option_value * 100)
                     else:
-                        if prev_toggle:  # Switching from percent to base
-                            display_value = st.session_state[key] * percent_option_value / 100
-                        else:  # Already in base
+                        # When showing as base value
+                        if is_percent_var:
+                            # For percent variables, show the corresponding base value
+                            base_key = key.replace('_percent', '')
+                            display_value = st.session_state.get(base_key, 
+                                           st.session_state[key] * percent_option_value / 100)
+                        else:
+                            # For base variables, show the base value directly
                             display_value = st.session_state[key]
 
                     # Create number input with calculated display value
@@ -321,13 +333,29 @@ def generate_inputs(variables, category, input_type):
                             **input_kwargs
                         )
                     
-                    # Store the value and update related values
+                    # Store the value based on toggle state
                     if percent_toggle:
-                        st.session_state[key] = value  # Store percent value
-                        st.session_state[key.replace('_percent', '')] = value * percent_option_value / 100  # Store base value
+                        # When toggled to percent, update the appropriate values
+                        if is_percent_var:
+                            # For percent variables, update the percent value and recalculate base
+                            st.session_state[key] = value
+                            base_key = key.replace('_percent', '')
+                            st.session_state[base_key] = value * percent_option_value / 100
+                        else:
+                            # For base variables, update the percent value and recalculate base
+                            st.session_state[f"{key}_percent"] = value
+                            st.session_state[key] = value * percent_option_value / 100
                     else:
-                        st.session_state[key] = value  # Store base value
-                        st.session_state[f"{key}_percent"] = value / percent_option_value * 100  # Store percent value
+                        # When toggled to base, update the appropriate values
+                        if is_percent_var:
+                            # For percent variables, update the base value but keep percent unchanged
+                            base_key = key.replace('_percent', '')
+                            st.session_state[base_key] = value
+                            # Percent value remains unchanged
+                        else:
+                            # For base variables, update the base value and recalculate percent
+                            st.session_state[key] = value
+                            st.session_state[f"{key}_percent"] = value / percent_option_value * 100
                     
                     # Update toggle state for next render
                     st.session_state[f"{key}_prev_toggle"] = percent_toggle
@@ -448,18 +476,18 @@ with tab2:
                     elif isinstance(row['upper_bound'], str):
                         upper_bound = st.session_state.get(row['upper_bound'], float('inf'))
                 
-                # For percent units, enforce 0-100 bounds
-                if row['unit'] == '%':
-                    lower_bound = 0
-                    upper_bound = 100
-                # Check bounds
+                # Check bounds based on whether it's a percent variable or base variable
                 if isinstance(value, (int, float)):
-                    # inputs = variables
-                    if value < lower_bound or value > upper_bound:
-                        out_of_bounds_inputs.append(key)
-                        # We can't access the name_col from generate_inputs() here
-                        # Instead we'll need to handle the highlighting when generating inputs
-                        pass
+                    is_percent_var = key.endswith('_percent') or (row['unit'] == '%' and not pd.notna(row['percent_option']))
+                    
+                    if is_percent_var:
+                        # For percent variables, enforce 0-100 bounds
+                        if value < 0 or value > 100:
+                            out_of_bounds_inputs.append(f"{key} (current value: {value})")
+                    else:
+                        # For base variables, use the defined bounds from variables.csv
+                        if value < lower_bound or value > upper_bound:
+                            out_of_bounds_inputs.append(f"{key} (current value: {value})")
 
         if empty_inputs:
             st.error("Please fill in all inputs before proceeding")
