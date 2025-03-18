@@ -49,7 +49,7 @@ def create_pie_chart(components, title, colors):
         color_discrete_sequence=colors,
         hole=0.4
     )
-    fig.update_traces(textposition='outside', textinfo='percent+label', textfont_color='black')
+    fig.update_traces(textposition='outside', textinfo='percent+label', textfont_color='black', hovertemplate='%{label}<br>Value: %{value:,.0f}<extra></extra>')
     fig.update_layout(
         showlegend=False,
         height=400,
@@ -83,14 +83,16 @@ def create_bar_chart(components, title, bar_color):
         x=names,
         y=values,
         name="Value",
-        marker_color=bar_color
+        marker_color=bar_color,
+        hovertemplate='%{x}<br>Value: %{y:,.0f}<extra></extra>'
     )
     fig.add_scatter(
         x=names,
         y=cumsum,
         name="Cumulative %",
         yaxis="y2",
-        line=dict(color='black')
+        line=dict(color='black'),
+        hovertemplate='%{x}<br>Cumulative: %{y:,.0f}%<extra></extra>'
     )
     fig.update_layout(
         title=title,

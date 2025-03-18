@@ -11,6 +11,18 @@ import copy
 from cost_functions import *
 from app_functions import *
 
+st.set_page_config(page_title="SanOpps", page_icon="💧", initial_sidebar_state="auto", menu_items=None)
+
+# Set light mode
+st.markdown("""
+    <style>
+        .stApp {
+            background-color: white;
+            color: black;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 read_local = False
 if read_local:
     city_defaults = pd.read_csv('data/city_defaults.csv')
@@ -43,7 +55,6 @@ initialize_session_state(['calculations_done', 'results_df', 'summary_data'], [F
 # Create configs directory if it doesn't exist
 if not os.path.exists('configs'):
     os.makedirs('configs')
-    
 def save_config():
     """Save current configuration to JSON file"""
     config = {}
@@ -479,7 +490,8 @@ with tab2:
         else:
             # RUN CALCULATIONS
             years = list(range(st.session_state.current_year, 2061))
-            results_data, state_snapshots = [], []
+            results_data = []
+            state_snapshots = []
             
             # Calculate derived values in session state
             st.session_state.hourly_monetary_income = st.session_state.gdp_per_capita/(8*5*52)
@@ -520,8 +532,6 @@ with tab2:
 
             cumulative_benefit_components = copy.deepcopy(benefit_components)
             cumulative_benefit_components['Total'] = 0
-            cumulative_cost_components = copy.deepcopy(cost_components)
-            cumulative_cost_components['Total'] = 0
 
             # Loop through years for cost-benefit calculations
             for i, year in enumerate(years):
@@ -550,41 +560,52 @@ with tab2:
                     st.session_state.gap_treatment_capacity = max(0, total_sewage_treatment_vol - st.session_state.stp_capacity)
                     
                     cost_components = add_capital_cost(arrays, i, st.session_state)
+                    cumulative_cost_components = {key: cost_components[key] for key in cost_components}
+                    cumulative_cost_components['Total'] = sum(cost_components.values()) * overall_factor
 
                 # Add operating costs and benefits after investment year
-                else:
+                elif year > st.session_state.investment_year:
                     cost_components = add_annual_operating_cost(i, arrays, st.session_state, year)
                     benefit_components = add_annual_benefits(i, arrays, st.session_state, year)
 
                     for key in cost_components:
-                        cumulative_cost_components[key] += cost_components[key] * overall_factor
+                        if key in cumulative_cost_components:
+                            cumulative_cost_components[key] += cost_components[key] * overall_factor
+                        else:
+                            print(f"Warning: Cost component key '{key}' not found in cumulative_cost_components")
                     for key in benefit_components:
-                        cumulative_benefit_components[key] += benefit_components[key] * overall_factor
+                        if key in cumulative_benefit_components:
+                            cumulative_benefit_components[key] += benefit_components[key] * overall_factor
+                        else:
+                            print(f"Warning: Benefit component key '{key}' not found in cumulative_benefit_components")
 
                     cumulative_cost_components['Total'] += sum(cost_components.values()) * overall_factor
                     cumulative_benefit_components['Total'] += sum(benefit_components.values()) * overall_factor
 
-                # Calculate benefit-to-cost ratio
-                benefit_to_cost_ratio = cumulative_benefit_components['Total'] / cumulative_cost_components['Total'] if cumulative_cost_components['Total'] != 0 else 0
+                    benefit_to_cost_ratio = cumulative_benefit_components['Total'] / cumulative_cost_components['Total'] if cumulative_cost_components['Total'] != 0 else 0
 
-                # Store state snapshot
-                state_snapshot = {
-                    'cumulative_benefit_components': cumulative_benefit_components.copy() if year > st.session_state.investment_year else None,
-                    'cumulative_cost_components': cumulative_cost_components.copy() if year > st.session_state.investment_year else None,
-                    'year': year,
-                    'benefit_to_cost_ratio': benefit_to_cost_ratio
-                }
-                state_snapshots.append(state_snapshot)
-
+                    state_snapshots.append({
+                        'year': year,
+                        'benefit_to_cost_ratio': benefit_to_cost_ratio,
+                        'cumulative_benefit_components': cumulative_benefit_components,
+                        'cumulative_cost_components': cumulative_cost_components
+                        })
+                
+                else:
+                    cumulative_cost_components = {key: 0 for key in cost_components}
+                    cumulative_cost_components['Total'] = 0
+                    cumulative_benefit_components = {key: 0 for key in benefit_components}
+                    cumulative_benefit_components['Total'] = 0
+                    benefit_to_cost_ratio = 0
 
                 present_value_total_benefits = sum(benefit_components.values()) * overall_factor
-                present_value_total_cost =  sum(cost_components.values()) * overall_factor
+                present_value_total_cost = sum(cost_components.values()) * overall_factor
 
                 # Store results
                 results_data.append({
                     "Year": year,
-                    "Benefits_Per_Person": present_value_total_benefits / arrays['urban_pop'][0] if present_value_total_benefits > 0 else 0,
-                    "Costs_Per_Person": present_value_total_cost / arrays['urban_pop'][0] if present_value_total_cost > 0 else 0,
+                    "Benefits_Per_Person": present_value_total_benefits / st.session_state.urban_pop,
+                    "Costs_Per_Person": present_value_total_cost / st.session_state.urban_pop,
                     "Total_Benefit": present_value_total_benefits,
                     "Total_Costs": present_value_total_cost,
                     "Cumulative_Total_Benefit": cumulative_benefit_components['Total'],
@@ -626,19 +647,18 @@ with tab3:
             fig = px.line(st.session_state.results_df, x="Year", y=["Cumulative_Total_Benefit", "Cumulative_Total_Cost"])
         
         # Add benefit-to-cost ratio on secondary y-axis
-        fig.add_scatter(x=st.session_state.results_df["Year"], 
-                    y=st.session_state.results_df["Benefit_to_Cost_Ratio"],
-                    name="Benefit-to-Cost Ratio",
-                    yaxis="y2")
+        fig.add_scatter(
+            x=st.session_state.results_df["Year"], 
+            y=st.session_state.results_df["Benefit_to_Cost_Ratio"],
+            name="Benefit-to-Cost Ratio",
+            yaxis="y2",
+            hovertemplate='%{y:,.1f}<extra></extra>'
+        )
 
         # Find intersection year where benefits exceed costs
         df = st.session_state.results_df
-        if show_per_capita:
-            benefits = df["Cumulative_Benefits_Per_Person"]
-            costs = df["Cumulative_Costs_Per_Person"]
-        else:
-            benefits = df["Cumulative_Total_Benefit"] 
-            costs = df["Cumulative_Total_Cost"]
+        benefits = df["Cumulative_Benefits_Per_Person"] if show_per_capita else df["Cumulative_Total_Benefit"]
+        costs = df["Cumulative_Costs_Per_Person"] if show_per_capita else df["Cumulative_Total_Cost"]
             
         # Find first year where benefits exceed costs
         intersection_year = None
@@ -648,100 +668,57 @@ with tab3:
                 break
                 
         if intersection_year:
-            # Add vertical line at intersection that stops at 0
+            # Add vertical line at intersection and ROI annotation
             fig.add_shape(
-                type="line",
-                x0=intersection_year,
-                x1=intersection_year,
-                y0=0,
-                y1=1,
-                yref="paper",
-                line=dict(color="black")
+                type="line", x0=intersection_year, x1=intersection_year,
+                y0=0, y1=1, yref="paper", line=dict(color="black")
             )
             
-            # Add annotation for ROI years
-            roi_years = intersection_year - st.session_state.investment_year
             fig.add_annotation(
-                x=intersection_year + 4,
-                y=0.8,
-                yref="paper",
-                text=f"{roi_years}-year ROI",
-                showarrow=False,
-                font=dict(color='black', size=16)
+                x=intersection_year + 4, y=0.8, yref="paper",
+                text=f"{intersection_year - st.session_state.investment_year}-year ROI",
+                showarrow=False, font=dict(color='black', size=16)
             )
 
-        # Update layout with secondary y-axis and styling
+        # Update layout
         fig.update_layout(
-            title=dict(
-                text="Return on WASH Investment",
-                font=dict(size=24)
-            ),
-            xaxis_title=dict(
-                text="Year",
-                font=dict(size=18)
-            ),
+            title=dict(text="Return on WASH Investment", font=dict(size=24)),
+            xaxis_title=dict(text="Year", font=dict(size=18)),
             yaxis_title=dict(
                 text=f"{st.session_state.currency}/person" if show_per_capita else st.session_state.currency,
                 font=dict(size=18)
             ),
             yaxis2=dict(
-                title=dict(
-                    text="Benefit-to-Cost Ratio",
-                    font=dict(size=18)
-                ),
-                overlaying="y",
-                side="right",
-                showgrid=False,
-                tickfont=dict(size=14)
+                title=dict(text="Benefit-to-Cost Ratio", font=dict(size=18)),
+                overlaying="y", side="right", showgrid=False, tickfont=dict(size=14)
             ),
-            yaxis=dict(
-                showgrid=True,
-                gridcolor='lightgrey',
-                tickfont=dict(size=14)
-            ),
-            xaxis=dict(
-                dtick=10,  # Set x-axis tick interval to 10 years
-                showgrid=False,
-                tickfont=dict(size=14)
-            ),
+            yaxis=dict(showgrid=True, gridcolor='lightgrey', tickfont=dict(size=14)),
+            xaxis=dict(dtick=10, showgrid=False, tickfont=dict(size=14)),
             showlegend=False,
             hovermode='x unified',
             hoverlabel=dict(font_size=14)
         )
 
-        # Update line colors and add markers
-        fig.data[0].update(line_color='green', name='Cumulative Benefits', mode='lines')  # Benefits line
-        fig.data[1].update(line_color='grey', name='Cumulative Costs', mode='lines')      # Costs line
-        fig.data[2].update(line_color='blue', mode='lines', line=dict(width=5), yaxis='y2')  # Ratio line on secondary axis
+        # Update line styles
+        fig.data[0].update(line_color='green', name='Cumulative Benefits', mode='lines', hovertemplate='Cumulative: %{y:,.0f}<extra></extra>')
+        fig.data[1].update(line_color='grey', name='Cumulative Costs', mode='lines', hovertemplate='Cumulative: %{y:,.0f}<extra></extra>')
+        fig.data[2].update(line_color='blue', mode='lines', line=dict(width=5), yaxis='y2')
 
-        # Add text labels at the end of each line
+        # Add text labels at end of lines
         last_x = df["Year"].iloc[-1]
         for trace in fig.data:
             last_y = trace.y[-1]
-            # Put Benefit-to-Cost Ratio label on left side
-            if trace.name == "Benefit-to-Cost Ratio":
-                x_pos = last_x - 3
-                x_anchor = 'right'
-                y_ref = 'y2'  # Use secondary y-axis reference for ratio label
-            else:
-                x_pos = last_x + 2
-                x_anchor = 'left'
-                y_ref = 'y'  # Use primary y-axis reference for other labels
+            y_ref = 'y2' if trace.name == "Benefit-to-Cost Ratio" else 'y'
+            x_pos = last_x - 3 if trace.name == "Benefit-to-Cost Ratio" else last_x + 2
+            x_anchor = 'right' if trace.name == "Benefit-to-Cost Ratio" else 'left'
                 
             fig.add_annotation(
-                x=x_pos,
-                y=last_y,
-                text=trace.name,
-                showarrow=False,
-                font=dict(
-                    color=trace.line.color,
-                    size=16
-                ),
-                xanchor=x_anchor,
-                yanchor='middle',
-                yref=y_ref  # Specify y-axis reference for each label
+                x=x_pos, y=last_y, text=trace.name,
+                showarrow=False, font=dict(color=trace.line.color, size=16),
+                xanchor=x_anchor, yanchor='middle', yref=y_ref
             )
         st.plotly_chart(fig)
+        
         # Create pie charts of benefit and cost components
         if st.session_state.state_snapshots:
             # Get available years from snapshots
@@ -776,11 +753,20 @@ with tab3:
                     )
                     st.plotly_chart(fig_benefits)
 
-                    fig_benefits_bar = create_bar_chart(
-                        selected_benefits,
-                        "Cumulative Contribution to Benefits",
-                        'green'
-                    )
+                    # If showing per capita values, convert the components to per capita
+                    if show_per_capita and 'urban_pop' in st.session_state:
+                        per_capita_benefits = {k: v / st.session_state.urban_pop for k, v in selected_benefits.items()}
+                        fig_benefits_bar = create_bar_chart(
+                            per_capita_benefits,
+                            "Cumulative Contribution to Benefits (Per Person)",
+                            'green'
+                        )
+                    else:
+                        fig_benefits_bar = create_bar_chart(
+                            selected_benefits,
+                            "Cumulative Contribution to Benefits",
+                            'green'
+                        )
                     # Make benefit-to-cost ratio line thicker
                     fig_benefits_bar.data[1].update(line=dict(width=3))
                     st.plotly_chart(fig_benefits_bar)
@@ -792,7 +778,8 @@ with tab3:
                     if snapshot['year'] == selected_year and snapshot.get('cumulative_cost_components'):
                         selected_costs = snapshot['cumulative_cost_components']
                         break
-                
+
+                print(selected_costs)
                 if selected_costs:
                     cost_colors = ['#1a1a1a', '#333333', '#4d4d4d', '#666666', '#808080', '#999999', '#b3b3b3']
                     fig_costs = create_pie_chart(
@@ -831,8 +818,23 @@ with tab4:
             
         if ten_year_ratio:
             st.info(f"1 {st.session_state.currency} of sanitation investment will yield {ten_year_ratio:.1f} {st.session_state.currency} of return in 10 years")
+            
+            # Calculate the number of households without treatment
+            households_without_treatment = st.session_state.urban_households * (1 - st.session_state.urban_pop_with_sewer_percent/100)
+            households_without_treatment_percent = (households_without_treatment / st.session_state.urban_households) * 100
+            
+            # Calculate the percentage addressed by sewer vs septic
+            sewer_percent = st.session_state.sewer_vs_fstp_percent
+            septic_percent = 100 - sewer_percent
+            
+            # Calculate the percentage of septage going to STP vs FSTP
+            septage_to_stp_percent = st.session_state.septage_to_stp_percent if 'septage_to_stp_percent' in st.session_state else 0
+            septage_to_fstp_percent = 100 - septage_to_stp_percent
+            
+            # Add explanatory notes
+            st.info(f"There is a {households_without_treatment:,.0f}-household ({households_without_treatment_percent:.1f}%) gap treatment capacity. {sewer_percent:.1f}% of this will be addressed by sewer lines and {st.session_state.gap_treatment_capacity:.2f}MLD additional STP capacity. {septic_percent:.1f}% of this will be addressed by septic systems, with {septage_to_stp_percent:.1f}% of septage taken to STP and {septage_to_fstp_percent:.1f}% taken to FSTP.")
         
-                # Add dropdown for value type selection
+        # Add dropdown for value type selection
         value_type_2 = st.selectbox(
             "Select value type",
             ["City-wide values", "Per capita values"],
@@ -959,6 +961,7 @@ with tab4:
                         selected_costs = None
                         for snapshot in st.session_state.state_snapshots:
                             if snapshot['year'] == selected_year and snapshot.get('cumulative_cost_components'):
+                                # print(snapshot.get('cumulative_cost_components'))
                                 selected_costs = snapshot['cumulative_cost_components']
                                 break
                         

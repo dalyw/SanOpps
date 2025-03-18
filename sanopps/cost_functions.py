@@ -13,6 +13,8 @@ def add_capital_cost(arrays, i, st_state):
     urban_households_without_fhtc = st_state.urban_households - st_state.urban_households_with_fhtp
     additional_ct = max((arrays['slum_pop'][i] / st_state.persons_per_wc) - st_state.comm_toilets * st_state.wc_per_ct, 0) 
     additional_pt = max((arrays['floating_pop'][i] / st_state.persons_per_pt) - st_state.public_toilets * st_state.wc_per_ct, 0)
+
+    # print(urban_households_without_fhtc * st_state.fhtc_cost)
     
     return {
         'Tap Water Supply': urban_households_without_fhtc * st_state.fhtc_cost,
@@ -72,8 +74,9 @@ def add_annual_operating_cost(i, arrays, st_state, current_year):
         'Sewage Treatment Plant': sewage_treatment_plant,
         'Fecal Sludge Treatment Plant': fecal_sludge_treatment_plant
     }
+
 def add_annual_benefits(i, arrays, st_state, current_year):
-    """Calculate annual benefits based on construction completion"""
+    """Calculate annual benefits based on construction completion with smooth ramping"""
     years_since_investment = current_year - st_state.investment_year
     
     # Initialize benefits
@@ -84,9 +87,20 @@ def add_annual_benefits(i, arrays, st_state, current_year):
     decreased_incidences = st_state.disease_incidence * st_state.disease_decrease_percent / 100
     working_age_ratio = st_state.working_age_pop_percent / 100
     
-    # Small infrastructure benefits
+    # Calculate ramp factor for smooth transition between small and large infrastructure completion
+    # Factor is 0 before small construction time, 1 after large construction time, and linear in between
+    ramp_factor = 0
     if years_since_investment >= st_state.construction_time_small:
-
+        if years_since_investment >= st_state.construction_time_large:
+            ramp_factor = 1.0
+        else:
+            # Linear interpolation between small and large construction times
+            ramp_factor = (years_since_investment - st_state.construction_time_small) / (
+                st_state.construction_time_large - st_state.construction_time_small)
+    
+    # Apply benefits with ramping factor if past small construction time
+    if years_since_investment >= st_state.construction_time_small:
+        # Health-related benefits
         reduced_healthcare_costs = decreased_incidences * (st_state.cost_per_visit + st_state.commute_cost_doctor)
 
         productivity_benefits_working = st_state.hourly_monetary_income * working_age_ratio * st_state.days_per_incidence * 8 * 0.6 * decreased_incidences
@@ -120,13 +134,11 @@ def add_annual_benefits(i, arrays, st_state, current_year):
         water_collection_time_saved = time_saved_water_working + time_saved_water_nonworking
         sanitation_time_saved = time_saved_sanitation_working + time_saved_sanitation_nonworking
 
-    # Large infrastructure benefits
-    if years_since_investment >= st_state.construction_time_large:  
-        tourism = st_state.tourism_contribution_percent / 100 * st_state.increase_gdp_tourism_percent / 100 * st_state.gdp_per_capita * arrays['urban_pop'][i] / 100
-        # print(st_state.tourism_contribution_percent)
-        # print(st_state.increase_gdp_tourism_percent)
-        # print(tourism)
-        # print(tourism / arrays['urban_pop'][i])
+        # Tourism benefits (ramp up smoothly from small to large construction time)
+        tourism = ramp_factor * (st_state.tourism_contribution_percent / 100 * 
+                                st_state.increase_gdp_tourism_percent / 100 * 
+                                st_state.gdp_per_capita * arrays['urban_pop'][i])
+    
     return {
         'Reduced Healtcare Costs': reduced_healthcare_costs,
         'Productivity from Healthcare': productivity_from_healthcare,
