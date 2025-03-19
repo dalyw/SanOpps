@@ -365,3 +365,14 @@ year. Below are the key components of the cost and benefit analysis:
 [^6]: <https://www.unicef.org/india/media/1221/file/Potential-Impact-of-Sanitation.pdf>
 
 [^7]: <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1149071>
+
+## Septage Treatment Decision Matrix
+
+The following table outlines the cost implications based on the availability of co-treatment facilities at Sewage Treatment Plants (STPs) and Fecal Sludge Treatment Plants (FSTPs):
+
+| Is CO treatment facility available at the existing STP? | Is the town proposing CO treatment at STP? | Does the town have FSTP(s)? | Capital Cost | Maintenance Cost |
+|--------------------------------------------------------|-------------------------------------------|----------------------------|--------------|------------------|
+| Yes | Yes | - | 0 | 0 |
+| No | Yes | - | Cost of CO treatment | 0 |
+| No | No | Yes | Cost of setting up of FSTP | Additional Septage ✕ INR Per KLD |
+| No | No | No | Cost of setting up of FSTP | Additional Septage ✕ INR Per KLD |

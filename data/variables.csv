@@ -24,19 +24,20 @@ Number of WC per CT block,Count,wc_per_ct,optional_input,Toilets,int,,0,,
 FHTC Construction Cost,currency/household,fhtc_cost,optional_input,Drinking Water,float,,0,,The cost per household for installing a functional household tap connection
 Households with Tap Water,%,urban_households_with_fhtp_percent,user_input,Drinking Water,float,urban_households,0,households,The percentage of urban households that have access to tap water connections
 Water Consumption Per Capita,LPCD,water_consumption,optional_input,Drinking Water,float,,0,,The average daily water consumption per person in liters
-Co Treatment at STP Available?,,co_treat_avail,user_input,Decentralized Treatment,str,,,,Whether co-treatment of septage is available at the STP
+Is Co Treatment available at the Existing STP?,,co_treat_avail,user_input,Decentralized Treatment,str,,,,Whether co-treatment of septage is available at the STP
+Is the Town proposing Co Treatment at STP?,,co_treat_proposed,user_input,Decentralized Treatment,str,,,,Whether co-treatment of septage is being proposed for at the STP
 Cost of Co-Treatment Facility at STP,currency/KL,cost_co_treatment,optional_input,Decentralized Treatment,float,,0,,The cost per kiloliter for co-treatment facilities at STP
 FSTPs Available?, ,fstp_avail,user_input,Decentralized Treatment,str,,,,Whether Fecal Sludge Treatment Plants are available
 FSTP Design Capacity,KLD,fstp_capacity,user_input,Decentralized Treatment,float,,0,,The maximum volume of fecal sludge that can be treated per day
-FSTP Cost,currency/KL,fstp_cost,optional_input,Decentralized Treatment,float,,0,,The cost per kiloliter of FSTP capacity
-FSTP Annual Maintenance,currency/KLD,fstp_maint_cost,optional_input,Decentralized Treatment,float,,0,,The yearly maintenance cost per kiloliter per day of FSTP capacity
+Capital Cost of FSTP,currency/KL,fstp_cost,optional_input,Decentralized Treatment,float,,0,,The cost per kiloliter of FSTP capacity
+Annual O&M Cost of FSTP,currency/KLD,fstp_maint_cost,optional_input,Decentralized Treatment,float,,0,,The yearly maintenance cost per kiloliter per day of FSTP capacity
 Percentage of Gap to be Addressed by Sewer,%,sewer_vs_fstp_percent,user_input,Decentralized Treatment,slider,,,,The percentage of sanitation gap to be addressed through sewered systems
 Sewer Construction Cost,currency/Km,sewer_const_cost,optional_input,Centralized Treatment,float,,0,,The cost per kilometer for constructing sewer lines
 Sewer Network Length,Km,sewer_length,user_input,Centralized Treatment,float,,0,,The total length of sewer network in kilometers
 Sewer Annual Maintenance,currency/Km,sewer_maint_cost,optional_input,Centralized Treatment,float,,,,The yearly maintenance cost per kilometer of sewer network
 STP Design Capacity,MLD,stp_capacity,user_input,Centralized Treatment,float,,,,The maximum volume of sewage that the treatment plant can process per day
-STP Construction Cost,currency/MLD,stp_cost,optional_input,Centralized Treatment,float,,,,The cost per million liters per day of sewage treatment plant capacity
-STP Annual Maintenance,currency/MLD,stp_maint_cost,optional_input,Centralized Treatment,float,,,,The yearly maintenance cost per million liters per day of STP capacity
+Capital Cost of STP,currency/MLD,stp_cost,optional_input,Centralized Treatment,float,,,,The cost per million liters per day of sewage treatment plant capacity
+Annual O&M Cost of STP,currency/MLD,stp_maint_cost,optional_input,Centralized Treatment,float,,,,The yearly maintenance cost per million liters per day of STP capacity
 Transportation Cost to Doctor,currency,commute_cost_doctor,optional_input,Health and Productivity,float,,,,The average cost of transportation to medical facilities
 Current Sewer Connection,%,urban_pop_with_sewer_percent,user_input,Centralized Treatment,float,urban_pop,,,The percentage of households currently connected to the sewer network
 Projected Sewer Connection,%,urban_pop_with_sewer_in_investment_year_percent,optional_input,Centralized Treatment,float,urban_pop,,,The target percentage of households to be connected to sewer network
