@@ -8,10 +8,10 @@ Urban Population,People,urban_pop,user_input,Demographic and Growth Information,
 Slum Population,%,slum_pop_percent,user_input,Demographic and Growth Information,int,urban_pop,0,urban_pop,The overall number of people residing in slum areas within the city
 Floating Population,%,floating_pop_percent,user_input,Demographic and Growth Information,int,urban_pop,0,urban_pop,The transient population that moves between locations without permanent residence
 Number of Urban Households,Households,urban_households,user_input,Demographic and Growth Information,int,,0,,The total count of households in urban areas within the city
-GDP per Capita,currency/Person-Year,gdp_per_capita,user_input,Demographic and Growth Information,float,,0,,The average economic output per person per year
+GDP per Capita,currency/Person-Year,gdp_per_capita,user_input,Economic Information,float,,0,,The average economic output per person per year
 10-year Population Growth Rate,%,growth_rate,optional_input,Demographic and Growth Information,float,,0,100,The projected percentage increase in population over a 10-year period
-Inflation Rate,%,inflation,optional_input,Demographic and Growth Information,float,,0,100,The annual rate at which prices increase in the economy
-Contribution of Tourism to GDP,%,tourism_contribution_percent,user_input,Demographic and Growth Information,float,gdp_per_capita,,,The portion of GDP per capita attributed to tourism
+Inflation Rate,%,inflation,optional_input,Economic Information,float,,0,100,The annual rate at which prices increase in the economy
+Contribution of Tourism to GDP,%,tourism_contribution_percent,user_input,Economic Information,float,gdp_per_capita,,,The portion of GDP per capita attributed to tourism
 Working Age Population,%,working_age_pop_percent,user_input,Demographic and Growth Information,float,urban_pop,,,The percentage of population that is of working age
 Anticipated Slum Population Decrease by Investment Year,%,slum_pop_percent_decrease,optional_input,Demographic and Growth Information,float,slum_pop,0,,
 Community Toilet Installation Cost,currency/WC,comm_toilet_cost,optional_input,Toilets,float,,0,,The cost per unit for constructing community toilets
@@ -54,9 +54,9 @@ Desludging Frequency,Years,desludging_freq,optional_input,Advanced Inputs,float,
 ULB officials to be trained within Population,%,percent_ulb_officials_trained,optional_input,Advanced Inputs,float,,,,
 Time saved from sanitation access (adjusted by CT proportion),HR/Person-Day,sanitation_access_saved,optional_input,Advanced Inputs,float,,0,,
 Septage emptied in household desludging,KL,septage_emptied_per_household,optional_input,Advanced Inputs,float,,0,,
-Sewer network length per person (pop > 100000),m/person,sewer_length_large,optional_input,Advanced Inputs,float,,0,,
-Sewer network length per person (20000 < pop <= 100000),m/person,sewer_length_medium,optional_input,Advanced Inputs,float,,0,,
-Sewer network length/person (pop <= 20000),m/person,sewer_length_small,optional_input,Advanced Inputs,float,,0,,
+Additional Sewer Length Needed Per Person,m/person,sewer_length_per_person,optional_input,Advanced Inputs,float,,0,,
 Percent Decrease in Disease Incidence due to WASH,%,disease_decrease_percent,optional_input,Advanced Inputs,float,,0,,
 Days off Work Per Disease Incidence,Count,days_per_incidence,optional_input,Advanced Inputs,float,,0,,
 Percentage increase in GDP due to Tourism Following WASH Investment,%,increase_gdp_tourism_percent,optional_input,Advanced Inputs,float,,0,,
+Amortize Capex over 20 years?, ,amortize_capex,optional_input,Economic Information,str,,0,,Whether to calculate capex as lump-sum or distirbuted over 20 years
+Interest Rate for Capex Amortization, ,interest_rate,optional_input,Economic Information,str,,0,,Interest rate per year if capex is paid off year-by-year

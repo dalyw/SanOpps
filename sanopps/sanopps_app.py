@@ -488,140 +488,11 @@ with tab2:
         elif out_of_bounds_inputs:
             st.error(f"The following inputs are outside their allowed bounds: {', '.join(out_of_bounds_inputs)}")
         else:
-        #     # RUN CALCULATIONS
-        #     years = list(range(st.session_state.current_year, 2061))
-        #     results_data = []
-        #     state_snapshots = []
-            
-        #     # Calculate derived values in session state
-        #     st.session_state.hourly_monetary_income = st.session_state.gdp_per_capita/(8*5*52)
-        #     st.session_state.slum_pop_percent_in_investment_year = max(
-        #         st.session_state.slum_pop_percent-st.session_state.slum_pop_percent_decrease,
-        #         0)
-        #     # st.session_state.household_size = st.session_state.urban_pop / st.session_state.urban_households
-        #     st.session_state.sewer_fraction = st.session_state.sewer_vs_fstp_percent / 100
-        #     st.session_state.fstp_fraction = 1 - st.session_state.sewer_fraction
-            
-        #     # Create arrays for year-by-year calculations
-        #     n_years = [(year - st.session_state.current_year) / 10 for year in years]
-        #     arrays = {}
-            
-        #     # Population arrays
-        #     for key in ['urban_pop', 'urban_households']:
-        #         arrays[key] = [st.session_state[key] * (1 + st.session_state.growth_rate/100) ** n for n in n_years]
-            
-        #     arrays['slum_pop'] = [(st.session_state.slum_pop_percent_in_investment_year / 100) * pop for pop in arrays['urban_pop']]
-        #     arrays['floating_pop'] = [(st.session_state.floating_pop_percent / 100) * pop for pop in arrays['urban_pop']]
-            
-        #     # FSTP calculations
-        #     arrays['households_septic_tanks'] = [households * (1 - st.session_state.urban_pop_with_sewer_percent/100) * st.session_state.fstp_fraction for households in arrays['urban_households']]
-        #     arrays['septage_treated_per_day'] = [(households * st.session_state.septage_emptied_per_household) / (st.session_state.desludging_freq * 300) for households in arrays['households_septic_tanks']]
-
-        #     # Initialize component dictionaries
-        #     cost_components = dict.fromkeys([
-        #         'Tap Water Supply', 'Community Toilets', 'Public Toilets',
-        #         'Sewer Network (CapEx + OpEx)', 'Sewage Treatment (CapEx + OpEx)', 'Fecal Sludge Treatment Plant',
-        #         'Training Officials', 'Public Awareness'
-        #     ], 0)
-            
-        #     benefit_components = dict.fromkeys([
-        #         'Reduced Healtcare Costs', 'Productivity from Healthcare',
-        #         'Water Collection Time Saved', 'Sanitation Time Saved',
-        #         'Recycled Water', 'Tourism'
-        #     ], 0)
-
-        #     cumulative_benefit_components = copy.deepcopy(benefit_components)
-        #     cumulative_benefit_components['Total'] = 0
-
-        #     # Loop through years for cost-benefit calculations
-        #     for i, year in enumerate(years):
-        #         inflation_factor = (1 + st.session_state.inflation/100) ** (year - st.session_state.current_year)
-        #         discount_factor = 1 / ((1 + st.session_state.discount_rate/100) ** (year - st.session_state.current_year))
-        #         overall_factor = inflation_factor * discount_factor
-
-        #         # Add capital costs only in investment year
-        #         if year == st.session_state.investment_year:
-        #             # Determine sewer length per person based on population
-        #             if arrays['urban_pop'][i] <= 20000:
-        #                 sewer_length_per_person = st.session_state.sewer_length_small
-        #             elif arrays['urban_pop'][i] <= 100000:
-        #                 sewer_length_per_person = st.session_state.sewer_length_medium
-        #             else:
-        #                 sewer_length_per_person = st.session_state.sewer_length_large
-
-        #             # Calculate sewer network and treatment capacity needs
-        #             st.session_state.additional_pop_connected_sewer = arrays['urban_pop'][i] * st.session_state.sewer_fraction * (1 - st.session_state.urban_pop_with_sewer_in_investment_year_percent / 100)
-        #             st.session_state.final_pop_connected_sewer_percent = (st.session_state.additional_pop_connected_sewer + st.session_state.urban_pop_with_sewer_percent/100 * st.session_state.urban_pop) / st.session_state.urban_pop
-        #             st.session_state.gap_sewer_network_km = max(0, (st.session_state.additional_pop_connected_sewer * sewer_length_per_person) / 1000)
-                    
-        #             new_sewage_treatment_vol = st.session_state.additional_pop_connected_sewer * st.session_state.water_consumption / 1000000
-        #             existing_sewage_treatment_vol = ((st.session_state.urban_pop_with_sewer_percent/100) * st.session_state.urban_pop) * st.session_state.water_consumption / 1000000
-        #             total_sewage_treatment_vol = new_sewage_treatment_vol + existing_sewage_treatment_vol
-        #             st.session_state.gap_treatment_capacity = max(0, total_sewage_treatment_vol - st.session_state.stp_capacity)
-                    
-        #             cost_components = add_capital_cost(arrays, i, st.session_state)
-        #             cumulative_cost_components = {key: cost_components[key] for key in cost_components}
-        #             cumulative_cost_components['Total'] = sum(cost_components.values()) * overall_factor
-
-        #         # Add operating costs and benefits after investment year
-        #         elif year > st.session_state.investment_year:
-        #             cost_components = add_annual_operating_cost(i, arrays, st.session_state, year)
-        #             benefit_components = add_annual_benefits(i, arrays, st.session_state, year)
-
-        #             for key in cost_components:
-        #                 if key in cumulative_cost_components:
-        #                     cumulative_cost_components[key] += cost_components[key] * overall_factor
-        #                 else:
-        #                     print(f"Warning: Cost component key '{key}' not found in cumulative_cost_components")
-        #             for key in benefit_components:
-        #                 if key in cumulative_benefit_components:
-        #                     cumulative_benefit_components[key] += benefit_components[key] * overall_factor
-        #                 else:
-        #                     print(f"Warning: Benefit component key '{key}' not found in cumulative_benefit_components")
-
-        #             cumulative_cost_components['Total'] += sum(cost_components.values()) * overall_factor
-        #             cumulative_benefit_components['Total'] += sum(benefit_components.values()) * overall_factor
-
-        #             benefit_to_cost_ratio = cumulative_benefit_components['Total'] / cumulative_cost_components['Total'] if cumulative_cost_components['Total'] != 0 else 0
-
-        #             state_snapshots.append({
-        #                 'year': year,
-        #                 'benefit_to_cost_ratio': benefit_to_cost_ratio,
-        #                 'cumulative_benefit_components': cumulative_benefit_components,
-        #                 'cumulative_cost_components': cumulative_cost_components
-        #                 })
-                
-        #         else:
-        #             cumulative_cost_components = {key: 0 for key in cost_components}
-        #             cumulative_cost_components['Total'] = 0
-        #             cumulative_benefit_components = {key: 0 for key in benefit_components}
-        #             cumulative_benefit_components['Total'] = 0
-        #             benefit_to_cost_ratio = 0
-
-        #         present_value_total_benefits = sum(benefit_components.values()) * overall_factor
-        #         present_value_total_cost = sum(cost_components.values()) * overall_factor
-
-        #         # Store results
-        #         results_data.append({
-        #             "Year": year,
-        #             "Benefits_Per_Person": present_value_total_benefits / st.session_state.urban_pop,
-        #             "Costs_Per_Person": present_value_total_cost / st.session_state.urban_pop,
-        #             "Total_Benefit": present_value_total_benefits,
-        #             "Total_Costs": present_value_total_cost,
-        #             "Cumulative_Total_Benefit": cumulative_benefit_components['Total'],
-        #             "Cumulative_Total_Cost": cumulative_cost_components['Total'],
-        #             "Cumulative_Benefits_Per_Person": cumulative_benefit_components['Total'] / arrays['urban_pop'][0] if cumulative_benefit_components['Total'] > 0 else 0,
-        #             "Cumulative_Costs_Per_Person": cumulative_cost_components['Total'] / arrays['urban_pop'][0] if cumulative_cost_components['Total'] > 0 else 0,
-        #             "Benefit_to_Cost_Ratio": benefit_to_cost_ratio
-        #         })
-
             results_df, state_snapshots = run_calculations(st.session_state)
-            # Save results and switch to Dashboard tab
             st.session_state.results_df = results_df
             st.session_state.state_snapshots = state_snapshots
             st.session_state.calculations_done = True
 
-            # Switch to Dashboard tab
             script_placeholder = st.empty()
             components.html(f"<script>{switch_tab(2)}</script>", height=0)
             time.sleep(0.2)
@@ -780,7 +651,6 @@ with tab3:
                         selected_costs = snapshot['cumulative_cost_components']
                         break
 
-                print(selected_costs)
                 if selected_costs:
                     cost_colors = ['#1a1a1a', '#333333', '#4d4d4d', '#666666', '#808080', '#999999', '#b3b3b3']
                     fig_costs = create_pie_chart(
@@ -962,7 +832,6 @@ with tab4:
                         selected_costs = None
                         for snapshot in st.session_state.state_snapshots:
                             if snapshot['year'] == selected_year and snapshot.get('cumulative_cost_components'):
-                                # print(snapshot.get('cumulative_cost_components'))
                                 selected_costs = snapshot['cumulative_cost_components']
                                 break
                         

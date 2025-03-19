@@ -1,13 +1,78 @@
 import pandas as pd
 import copy
 
-def add_capital_cost(arrays, i, st_state):
+def determine_treatment_approach(st_state, arrays, i):
+    """Determine the appropriate treatment approach based on available infrastructure
+    
+    Inputs:
+    st_state: current input variable state
+    arrays: state variables at each indexed year
+    i: index of current year
+    
+    Returns:
+    Dictionary with treatment decisions, flow allocations, and capacity requirements
+    """
+    result = {
+        'use_co_treatment': False,
+        'use_fstp': False,
+        'flow_to_co_treatment': 0,
+        'flow_to_fstp': 0,
+        'additional_fstp_capacity_needed': 0,
+        'additional_co_treatment_capacity_needed': 0
+    }
+    
+    daily_septage_flow = arrays['septage_treated_per_day'][i]
+    
+    # Check if co-treatment is available at existing STP
+    if st_state.co_treat_avail == "YES":
+        # Calculate current sewage load to determine if there's capacity for co-treatment
+        current_sewage_load = (st_state.urban_pop_with_sewer_percent/100) * arrays['urban_pop'][i] * st_state.water_consumption / 1000000
+        
+        # If there's enough capacity in the STP for co-treatment
+        if st_state.gap_treatment_capacity < (st_state.stp_capacity - current_sewage_load):
+            result['use_co_treatment'] = True
+            result['flow_to_co_treatment'] = daily_septage_flow
+
+        # If co-treatment capacity is insufficient but FSTP is available
+        elif st_state.fstp_avail == "YES" and st_state.fstp_capacity >= daily_septage_flow:
+            result['use_fstp'] = True
+            result['flow_to_fstp'] = daily_septage_flow
+
+        # Use FSTP if no other option
+        else:
+            result['use_fstp'] = True
+            result['flow_to_fstp'] = daily_septage_flow
+            result['additional_fstp_capacity_needed'] = daily_septage_flow
+    
+    # If co-treatment is not available but is being proposed
+    elif st_state.co_treat_avail == "NO" and st_state.co_treat_proposed == "YES":
+        result['use_co_treatment'] = True
+        result['flow_to_co_treatment'] = daily_septage_flow
+        result['additional_co_treatment_capacity_needed'] = daily_septage_flow
+    
+    # If no co-treatment (available or proposed)
+    else:
+        result['use_fstp'] = True
+        result['flow_to_fstp'] = daily_septage_flow
+        
+        # Check if FSTP exists
+        if st_state.fstp_avail == "YES" and st_state.fstp_capacity >= daily_septage_flow:
+            # Use existing FSTP, no additional capacity needed
+            pass
+        else:
+            # Need to build new FSTP
+            result['additional_fstp_capacity_needed'] = daily_septage_flow
+    
+    return result
+
+def add_capital_cost(arrays, i, st_state, treatment_decision):
     """Calculate capital costs for infrastructure investments
     
     Inputs:
     arrays: state variables at each indexed year
     i: index of investment year
     st_state: current input variable state
+    treatment_decision: dictionary with treatment approach details
     
     Returns:
     Dictionary of capital costs by component
@@ -23,19 +88,23 @@ def add_capital_cost(arrays, i, st_state):
         0
         )
     
+    # Calculate capital costs for treatment
+    fstp_capital_cost = treatment_decision['additional_fstp_capacity_needed'] * st_state.fstp_cost / 1000
+    co_treatment_capital_cost = treatment_decision['additional_co_treatment_capacity_needed'] * st_state.cost_co_treatment / 1000
+    
     return {
         'Tap Water Supply': urban_households_without_fhtc * st_state.fhtc_cost,
         'Community Toilets': additional_ct * st_state.comm_toilet_cost,
         'Public Toilets': additional_pt * st_state.public_toilet_cost,
         'Sewer Network (CapEx + OpEx)': st_state.gap_sewer_network_km * st_state.sewer_const_cost,
         'Sewage Treatment (CapEx + OpEx)': st_state.sewer_fraction * st_state.gap_treatment_capacity * st_state.stp_cost,
-        'Fecal Sludge Treatment Plant': (arrays['septage_treated_per_day'][i] * st_state.fstp_cost) / 1000,
+        'Fecal Sludge Treatment Plant': fstp_capital_cost + co_treatment_capital_cost,
         'Training Officials': 0,
         'Public Awareness': 0
     }
 
 
-def add_annual_operating_cost(i, arrays, st_state, current_year):
+def add_annual_operating_cost(i, arrays, st_state, current_year, treatment_decision):
     """Calculate operating costs based on construction completion"""
     years_since_investment = current_year - st_state.investment_year
     
@@ -55,28 +124,10 @@ def add_annual_operating_cost(i, arrays, st_state, current_year):
         sewer = st_state.gap_sewer_network_km * st_state.sewer_maint_cost
         sewage_treatment_plant = st_state.gap_treatment_capacity * st_state.stp_maint_cost
 
-        # Septage treatment decision logic based on the decision matrix
-        if st_state.co_treat_avail == "YES":
-
-            current_sewage_load = (st_state.urban_pop_with_sewer_percent/100) * arrays['urban_pop'][i] * st_state.water_consumption / 1000000
-
-            if st_state.gap_treatment_capacity < (st_state.stp_capacity - current_sewage_load):
-                fecal_sludge_treatment_plant = arrays['septage_treated_per_day'][i] * st_state.cost_co_treatment / 1000
-            
-            elif st_state.fstp_avail == "YES" and st_state.fstp_capacity >= arrays['septage_treated_per_day'][i]: # FSTP available with capacity
-                fecal_sludge_treatment_plant = arrays['septage_treated_per_day'][i] * st_state.fstp_maint_cost / 1000
-
-            else: # Default to FSTP cost if no other option available
-                fecal_sludge_treatment_plant = arrays['septage_treated_per_day'][i] * st_state.fstp_maint_cost / 1000
-
-        elif st_state.co_treat_avail == "NO" and st_state.co_treat_proposed == "YES":
-            # If town is proposing co-treatment at STP but it's not currently available
-            # Capital cost is handled elsewhere, no additional maintenance cost
-            fecal_sludge_treatment_plant = 0
-        else:
-            # If no co-treatment at STP and no FSTP, still need to handle septage
-            # Default to FSTP maintenance cost
-            fecal_sludge_treatment_plant = arrays['septage_treated_per_day'][i] * st_state.fstp_maint_cost / 1000
+        # Calculate maintenance costs based on treatment decision
+        fstp_maintenance = treatment_decision['flow_to_fstp'] * st_state.fstp_maint_cost / 1000
+        co_treatment_maintenance = treatment_decision['flow_to_co_treatment'] * st_state.cost_co_treatment / 1000
+        fecal_sludge_treatment_plant = fstp_maintenance + co_treatment_maintenance
 
     return {
         'Training Officials': training_officials,
@@ -230,40 +281,70 @@ def run_calculations(st_state):
     cumulative_benefit_components = copy.deepcopy(benefit_components)
     cumulative_benefit_components['Total'] = 0
 
+    # Calculate amortization factor if needed
+    amortization_period = 20  # years
+    capital_costs_by_component = None
+    annual_amortized_payments = {}
+    
     # Loop through years for cost-benefit calculations
     for i, year in enumerate(years):
         inflation_factor = (1 + st_state.inflation/100) ** (year - st_state.current_year)
         discount_factor = 1 / ((1 + st_state.discount_rate/100) ** (year - st_state.current_year))
         overall_factor = inflation_factor * discount_factor
 
-        # Add capital costs only in investment year
-        if year == st_state.investment_year:
-            # Determine sewer length per person based on population
-            if arrays['urban_pop'][i] <= 20000:
-                sewer_length_per_person = st_state.sewer_length_small
-            elif arrays['urban_pop'][i] <= 100000:
-                sewer_length_per_person = st_state.sewer_length_medium
-            else:
-                sewer_length_per_person = st_state.sewer_length_large
+        # Determine treatment approach once per year
+        treatment_decision = determine_treatment_approach(st_state, arrays, i)
 
+        
+        if year == st_state.investment_year: # Add capital costs only
             # Calculate sewer network and treatment capacity needs
             st_state.additional_pop_connected_sewer = arrays['urban_pop'][i] * st_state.sewer_fraction * (1 - st_state.urban_pop_with_sewer_in_investment_year_percent / 100)
             st_state.final_pop_connected_sewer_percent = (st_state.additional_pop_connected_sewer + st_state.urban_pop_with_sewer_percent/100 * st_state.urban_pop) / st_state.urban_pop
-            st_state.gap_sewer_network_km = max(0, (st_state.additional_pop_connected_sewer * sewer_length_per_person) / 1000)
+            st_state.gap_sewer_network_km = max(0, (st_state.additional_pop_connected_sewer * st_state.sewer_length_per_person) / 1000)
             
             new_sewage_treatment_vol = st_state.additional_pop_connected_sewer * st_state.water_consumption / 1000000
             existing_sewage_treatment_vol = ((st_state.urban_pop_with_sewer_percent/100) * st_state.urban_pop) * st_state.water_consumption / 1000000
             total_sewage_treatment_vol = new_sewage_treatment_vol + existing_sewage_treatment_vol
             st_state.gap_treatment_capacity = max(0, total_sewage_treatment_vol - st_state.stp_capacity)
             
-            cost_components = add_capital_cost(arrays, i, st_state)
-            cumulative_cost_components = {key: cost_components[key] for key in cost_components}
-            cumulative_cost_components['Total'] = sum(cost_components.values()) * overall_factor
+            capital_costs_by_component = add_capital_cost(arrays, i, st_state, treatment_decision)
+            
+            if hasattr(st_state, 'amortize_capex') and st_state.amortize_capex:
+                # Calculate annual payment for each capital cost component
+                # Using PMT formula: PMT = P * r * (1+r)^n / ((1+r)^n - 1)
+                r = st_state.interest_rate / 100  # Convert percentage to decimal
+                n = amortization_period
+                amortization_factor = r * (1 + r)**n / ((1 + r)**n - 1)
+                
+                for component, cost in capital_costs_by_component.items():
+                    annual_amortized_payments[component] = cost * amortization_factor if cost > 0 else 0
+                
+                # For investment year, add the first year's amortized payment
+                cost_components = annual_amortized_payments.copy()
+                cumulative_cost_components = {key: cost_components[key] for key in cost_components}
+                cumulative_cost_components['Total'] = sum(cost_components.values()) * overall_factor
+            else:
+                # If not amortizing, add full capital costs in investment year
+                cost_components = capital_costs_by_component
+                cumulative_cost_components = {key: cost_components[key] for key in cost_components}
+                cumulative_cost_components['Total'] = sum(cost_components.values()) * overall_factor
 
         # Add operating costs and benefits after investment year
         elif year > st_state.investment_year:
-            cost_components = add_annual_operating_cost(i, arrays, st_state, year)
+            operating_costs = add_annual_operating_cost(i, arrays, st_state, year, treatment_decision)
             benefit_components = add_annual_benefits(i, arrays, st_state, year)
+            
+            # If amortizing and within amortization period, add annual payments
+            if hasattr(st_state, 'amortize_capex') and st_state.amortize_capex and (year - st_state.investment_year) < amortization_period:
+                cost_components = operating_costs.copy()
+                # Add amortized capital costs to operating costs
+                for component, annual_payment in annual_amortized_payments.items():
+                    if component in cost_components:
+                        cost_components[component] += annual_payment
+                    else:
+                        cost_components[component] = annual_payment
+            else:
+                cost_components = operating_costs
 
             for key in cost_components:
                 if key in cumulative_cost_components:
