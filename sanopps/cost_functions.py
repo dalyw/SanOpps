@@ -137,9 +137,9 @@ def add_annual_benefits(i, arrays, st_state, years_since_investment):
         water_collection_time_saved = time_saved_water_working + time_saved_water_nonworking
 
         # Sanitation time saved
-        affected_pop = (st_state.slum_pop_percent + st_state.floating_pop_percent) / 100
-        time_saved_sanitation_working = hourly_income * working_age_ratio * working_age_factor * st_state.sanitation_access_saved * affected_pop
-        time_saved_sanitation_nonworking = hourly_income * (1 - working_age_ratio) * nonworking_age_factor * st_state.sanitation_access_saved * affected_pop
+        affected_pop = (100 - st_state.urban_pop_with_sewer_in_investment_year_percent + st_state.slum_pop_percent + st_state.floating_pop_percent) / 100
+        time_saved_sanitation_working = hourly_income * working_age_ratio * working_age_factor * st_state.sanitation_access_saved * arrays['urban_pop'][i] * affected_pop
+        time_saved_sanitation_nonworking = hourly_income * (1 - working_age_ratio) * nonworking_age_factor * st_state.sanitation_access_saved * arrays['urban_pop'][i] * affected_pop
         sanitation_time_saved = time_saved_sanitation_working + time_saved_sanitation_nonworking
 
         # Tourism Benefits
