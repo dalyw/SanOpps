@@ -24,18 +24,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Define sensitivity parameters
-sensitivity_parameters = [
-    'sewer_vs_fstp_percent',
-    'disease_decrease_percent',
-    'water_access_saved',
-    'sanitation_access_saved',
-    'increase_gdp_tourism_percent',
-    'tourism_contribution_percent',
-    'days_per_incidence',
-    'percent_ulb_officials_trained'
-]
-
 read_local = False
 if read_local:
     city_defaults = pd.read_csv('data/city_defaults.csv')
@@ -814,60 +802,112 @@ with tab4:
         components.html(f"<script>{switch_tab(4)}</script>", height=0)
         script_placeholder.empty()
 with tab5:
+    # Define sensitivity parameters
+    sensitivity_parameters = [
+        'sewer_vs_fstp_percent',
+        'disease_decrease_percent',
+        'water_access_saved',
+        'sanitation_access_saved',
+        'increase_gdp_tourism_percent',
+        'tourism_contribution_percent',
+        'days_per_incidence',
+        'percent_ulb_officials_trained'
+    ]
     if not st.session_state.get('calculations_done', False):
         st.warning('Please click "Submit" on Input Parameters tab')
     else:
         st.subheader("Sensitivity Analysis")
         st.write("This analysis shows how the 10-year benefit-to-cost ratio changes when key parameters are increased or decreased by 20%.")
         
+        # Parameter selection
+        st.subheader("Select Parameters for Analysis")
+        
+        # Get all available parameters from variables dataframe that are float or int type
+        numeric_parameters = variables[(variables['value_type'].isin(['float', 'int'])) & 
+                                      (~variables['key'].isin(['current_year', 'investment_year']))]['key'].tolist()
+        
+        # Initialize selected parameters in session state if not already present
+        if 'selected_sensitivity_params' not in st.session_state:
+            # Filter the default sensitivity parameters to only include numeric ones
+            default_params = [param for param in sensitivity_parameters if param in numeric_parameters]
+            st.session_state.selected_sensitivity_params = default_params
+        
+        # Create multiselect dropdown for parameter selection
+        selected_params = st.multiselect(
+            "Choose parameters to include in sensitivity analysis:",
+            options=numeric_parameters,
+            default=st.session_state.selected_sensitivity_params,
+            format_func=lambda x: x.replace('_', ' ').title(),
+            key="sensitivity_param_selector"
+        )
+        
+        # Update session state with selected parameters
+        st.session_state.selected_sensitivity_params = selected_params
+        
+        # Display the number of selected parameters
+        st.write(f"Selected {len(selected_params)} parameters for sensitivity analysis.")
         # Run sensitivity analysis when user visits this tab
         if st.button("Run Sensitivity Analysis"):
-            sensitivity_results = {}
-            base_bcr = st.session_state.base_bcr
-            
-            if base_bcr is not None:
-                # Run sensitivity analysis for each parameter one at a time
-                for param in sensitivity_parameters:
-                    if param in st.session_state:
-                        # Save original value
-                        original_value = st.session_state[param]
-                        
-                        # Ensure current_year is properly set
-                        if 'current_year' not in st.session_state and 'investment_year' in st.session_state:
-                            st.session_state['current_year'] = st.session_state['investment_year']
-                        
-                        # Test with 20% decrease
-                        st.session_state[param] = original_value * 0.8
-                        decrease_results, _ = run_calculations(st.session_state)
-                        investment_year = st.session_state.investment_year
-                        target_year = investment_year + 10
-                        decrease_data = decrease_results[decrease_results['Year'] == target_year]
-                        decrease_bcr = decrease_data.iloc[0]['Benefit_to_Cost_Ratio'] if not decrease_data.empty else None
-                        
-                        # Restore original value before testing increase
-                        st.session_state[param] = original_value
-                        
-                        # Test with 20% increase
-                        st.session_state[param] = original_value * 1.2
-                        increase_results, _ = run_calculations(st.session_state)
-                        increase_data = increase_results[increase_results['Year'] == target_year]
-                        increase_bcr = increase_data.iloc[0]['Benefit_to_Cost_Ratio'] if not increase_data.empty else None
-                        
-                        # Restore original value
-                        st.session_state[param] = original_value
-                        
-                        # Calculate percent changes
-                        if decrease_bcr is not None and increase_bcr is not None:
-                            decrease_change = (decrease_bcr - base_bcr) / base_bcr * 100
-                            increase_change = (increase_bcr - base_bcr) / base_bcr * 100
-                            sensitivity_results[param] = {
-                                'decrease': decrease_change,
-                                'increase': increase_change
-                            }
-            
-            # Update session state with results
-            st.session_state.sensitivity_results = sensitivity_results
-            st.rerun()
+            if not st.session_state.selected_sensitivity_params:
+                st.error("Please select at least one parameter for sensitivity analysis.")
+            else:
+                sensitivity_results = {}
+                base_bcr = st.session_state.base_bcr
+                
+                if base_bcr is not None:
+                    # Run sensitivity analysis for each selected parameter one at a time
+                    for param in st.session_state.selected_sensitivity_params:
+                        if param in st.session_state:
+                            # Save original value
+                            original_value = st.session_state[param]
+                            
+                            # Ensure current_year is properly set
+                            if 'current_year' not in st.session_state and 'investment_year' in st.session_state:
+                                st.session_state['current_year'] = st.session_state['investment_year']
+                            
+                            # Check if parameter is int type
+                            param_type = variables[variables['key'] == param]['value_type'].values[0] if param in variables['key'].values else 'float'
+                            
+                            # Test with 20% decrease
+                            if param_type == 'int':
+                                st.session_state[param] = int(original_value * 0.8)
+                            else:
+                                st.session_state[param] = original_value * 0.8
+                                
+                            decrease_results, _ = run_calculations(st.session_state)
+                            investment_year = st.session_state.investment_year
+                            target_year = investment_year + 10
+                            decrease_data = decrease_results[decrease_results['Year'] == target_year]
+                            decrease_bcr = decrease_data.iloc[0]['Benefit_to_Cost_Ratio'] if not decrease_data.empty else None
+                            
+                            # Restore original value before testing increase
+                            st.session_state[param] = original_value
+                            
+                            # Test with 20% increase
+                            if param_type == 'int':
+                                st.session_state[param] = int(original_value * 1.2)
+                            else:
+                                st.session_state[param] = original_value * 1.2
+                                
+                            increase_results, _ = run_calculations(st.session_state)
+                            increase_data = increase_results[increase_results['Year'] == target_year]
+                            increase_bcr = increase_data.iloc[0]['Benefit_to_Cost_Ratio'] if not increase_data.empty else None
+                            
+                            # Restore original value
+                            st.session_state[param] = original_value
+                            
+                            # Calculate percent changes
+                            if decrease_bcr is not None and increase_bcr is not None:
+                                decrease_change = (decrease_bcr - base_bcr) / base_bcr * 100
+                                increase_change = (increase_bcr - base_bcr) / base_bcr * 100
+                                sensitivity_results[param] = {
+                                    'decrease': decrease_change,
+                                    'increase': increase_change
+                                }
+                
+                # Update session state with results
+                st.session_state.sensitivity_results = sensitivity_results
+                st.rerun()
             
         if 'sensitivity_results' in st.session_state and st.session_state.sensitivity_results:
             # Create data for tornado chart
@@ -970,7 +1010,7 @@ with tab5:
         elif 'sensitivity_results' in st.session_state:
             st.warning("No sensitivity results available. Please run the sensitivity analysis.")
         else:
-            st.info("Click 'Run Sensitivity Analysis' to see how changes in parameters affect the results.")
+            st.info("Select parameters above and click 'Run Sensitivity Analysis' to see how changes in parameters affect the results.")
     
     # Add "Next" button to go to Methodology tab
     if st.button("Next: Methodology"):
