@@ -25,10 +25,14 @@ st.markdown("""
 
 # Define sensitivity parameters
 sensitivity_parameters = [
+    'sewer_vs_fstp_percent',
     'disease_decrease_percent',
     'water_access_saved',
     'sanitation_access_saved',
-    'increase_gdp_tourism_percent'
+    'increase_gdp_tourism_percent',
+    'tourism_contribution_percent',
+    'days_per_incidence',
+    'percent_ulb_officials_trained'
 ]
 
 read_local = False
@@ -808,7 +812,6 @@ with tab4:
         script_placeholder = st.empty()
         components.html(f"<script>{switch_tab(4)}</script>", height=0)
         script_placeholder.empty()
-
 with tab5:
     if not st.session_state.get('calculations_done', False):
         st.warning('Please click "Submit" on Input Parameters tab')
@@ -822,7 +825,7 @@ with tab5:
             base_bcr = st.session_state.base_bcr
             
             if base_bcr is not None:
-                # Run sensitivity analysis for each parameter
+                # Run sensitivity analysis for each parameter one at a time
                 for param in sensitivity_parameters:
                     if param in st.session_state:
                         # Save original value
@@ -839,6 +842,9 @@ with tab5:
                         target_year = investment_year + 10
                         decrease_data = decrease_results[decrease_results['Year'] == target_year]
                         decrease_bcr = decrease_data.iloc[0]['Benefit_to_Cost_Ratio'] if not decrease_data.empty else None
+                        
+                        # Restore original value before testing increase
+                        st.session_state[param] = original_value
                         
                         # Test with 20% increase
                         st.session_state[param] = original_value * 1.2
@@ -905,14 +911,18 @@ with tab5:
                 hovertemplate='%{y}: %{x:.1f}% change<extra></extra>'
             ))
             
-            # Update layout
+            # Update layout to center the plot at x=0
+            all_values = decrease_values + increase_values
+            max_abs_value = max(abs(min(all_values)), abs(max(all_values)))
+            
             fig.update_layout(
                 title='Impact on 10-Year Benefit-to-Cost Ratio',
                 xaxis=dict(
                     title='Percent Change in Benefit-to-Cost Ratio',
                     zeroline=True,
                     zerolinewidth=2,
-                    zerolinecolor='black'
+                    zerolinecolor='black',
+                    range=[-max_abs_value * 1.1, max_abs_value * 1.1]  # Symmetric range around zero
                 ),
                 yaxis=dict(
                     title='Parameter',
@@ -937,8 +947,8 @@ with tab5:
             ### How to interpret this chart:
             - The chart shows how the 10-year benefit-to-cost ratio changes when each parameter is increased or decreased by 20%.
             - Parameters are sorted by their overall impact (largest impact at the top).
-            - Red bars show the effect of decreasing the parameter by 20%.
-            - Green bars show the effect of increasing the parameter by 20%.
+            - Red bars (left of center) show the effect of decreasing the parameter by 20%.
+            - Green bars (right of center) show the effect of increasing the parameter by 20%.
             - Longer bars indicate parameters that have a greater influence on the results.
             """)
             
