@@ -110,7 +110,7 @@ def add_annual_benefits(i, arrays, st_state, years_since_investment):
     """Calculate annual benefits based on construction completion"""    
     reduced_healthcare_costs = reduced_healthcare_commute_costs = productivity_benefits_working = productivity_benefits_nonworking = water_collection_time_saved = 0
     sanitation_time_saved = recycled_water = tourism = 0
-    hourly_income = st_state.hourly_monetary_income
+    hourly_income = st_state.hourly_monetary_income * (1 + st_state.inflation_rate/100) ** years_since_investment
     
     working_age_factor = 0.6
     nonworking_age_factor = 0.15
