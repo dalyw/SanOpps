@@ -110,7 +110,7 @@ def add_annual_benefits(i, arrays, st_state, years_since_investment):
     """Calculate annual benefits based on construction completion"""    
     reduced_healthcare_costs = reduced_healthcare_commute_costs = productivity_benefits_working = productivity_benefits_nonworking = water_collection_time_saved = 0
     sanitation_time_saved = recycled_water = tourism = 0
-    hourly_income = st_state.hourly_monetary_income * (1 + st_state.inflation_rate/100) ** years_since_investment
+    hourly_income = st_state.hourly_monetary_income * (1 + st_state.inflation/100) ** years_since_investment
     
     working_age_factor = 0.6
     nonworking_age_factor = 0.15
@@ -144,7 +144,7 @@ def add_annual_benefits(i, arrays, st_state, years_since_investment):
 
         # Tourism Benefits
         # Adjust GDP per capita for inflation over time
-        inflation_adjusted_gdp = st_state.gdp_per_capita * (1 + st_state.inflation_rate/100) ** years_since_investment
+        inflation_adjusted_gdp = st_state.gdp_per_capita * (1 + st_state.inflation/100) ** years_since_investment
         tourism = (st_state.tourism_contribution_percent / 100 * st_state.increase_gdp_tourism_percent / 100 * inflation_adjusted_gdp * arrays['urban_pop'][i])
 
     return {
