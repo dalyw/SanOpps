@@ -23,6 +23,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Define sensitivity parameters
+sensitivity_parameters = [
+    'disease_decrease_percent',
+    'water_access_saved',
+    'sanitation_access_saved',
+    'increase_gdp_tourism_percent'
+]
+
 read_local = False
 if read_local:
     city_defaults = pd.read_csv('data/city_defaults.csv')
@@ -39,18 +47,19 @@ else:
 
 st.title("SanOpps: The WASH Cost-Benefit Analysis Tool for Local Government")
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "Home Page",
     "Data Input",
     "Dashboard",
     "Summary", 
+    "Sensitivity",
     "Methodology",
     "Glossary",
     "Help"
 ])
 
 # Initialize session state for calculations
-initialize_session_state(['calculations_done', 'results_df', 'summary_data'], [False, None, None])
+initialize_session_state(['calculations_done', 'results_df', 'summary_data', 'sensitivity_results'], [False, None, None, None])
 
 # Create configs directory if it doesn't exist
 if not os.path.exists('configs'):
@@ -60,7 +69,7 @@ def save_config():
     config = {}
     for key in st.session_state:
         # Only save input parameters, not calculation results
-        if key not in ['calculations_done', 'results_df', 'summary_data']:
+        if key not in ['calculations_done', 'results_df', 'summary_data', 'sensitivity_results']:
             # Convert numpy types to native Python types to ensure JSON serialization
             if isinstance(st.session_state[key], (np.int64, np.int32, np.int16, np.int8)):
                 config[key] = int(st.session_state[key])
@@ -242,7 +251,7 @@ def generate_inputs(variables, category, input_type):
                     elif row['value_type'] == 'int':
                         st.session_state[key] = 1
                     else:
-                        st.session_state[key] = "NO" if key in ['co_treat_avail', 'fstp_avail', 'co_treat_proposed'] else "INR"
+                        st.session_state[key] = "NO" if key in ['co_treat_avail', 'fstp_avail', 'co_treat_proposed', 'amortize_capex'] else "INR"
                 
                 if pd.notna(row['percent_option']):
                     if row['unit'] == '%':
@@ -257,7 +266,7 @@ def generate_inputs(variables, category, input_type):
                 'help': help_val
             }
             
-            if key in ['currency', 'co_treat_avail', 'fstp_avail', 'co_treat_proposed']:
+            if key in ['currency', 'co_treat_avail', 'fstp_avail', 'co_treat_proposed', 'amortize_capex']:
                 options = ["INR", "USD", "EUR"] if key == 'currency' else ["NO", "YES"]
                 current_value = st.session_state[key]
                 if current_value not in options:
@@ -333,6 +342,7 @@ def generate_inputs(variables, category, input_type):
                             f"direct_{key}",
                             value=int(display_value),
                             key=f"direct_{key}_{percent_toggle}",  # Add toggle state to key to force refresh
+                            step=1,  # Use step instead of format for integers
                             **input_kwargs
                         )
                     else:
@@ -340,6 +350,7 @@ def generate_inputs(variables, category, input_type):
                             f"direct_{key}",
                             value=float(display_value),
                             key=f"direct_{key}_{percent_toggle}",  # Add toggle state to key to force refresh
+                            format="%.1f",  # Format with thousands separator and 2 decimal places
                             **input_kwargs
                         )
                     
@@ -380,12 +391,14 @@ def generate_inputs(variables, category, input_type):
                             f"input_{key}",
                             value=float(st.session_state[key]),
                             key=f"input_{key}",
+                            format="%.1f",  # Format with thousands separator and 2 decimal places
                             **input_kwargs
                         )
                     st.session_state[key] = value
 
         with units_col:
             if pd.notna(row['percent_option']):
+                # print(key)
                 if st.session_state.get(f"{key}_percent_toggle", row['unit'] == '%'):
                     matching_rows = variables[variables['key'] == row['percent_option']]
                     percent_option_label = matching_rows.iloc[0]['label'] if not matching_rows.empty else row['percent_option']
@@ -482,9 +495,11 @@ with tab2:
                     out_of_bounds_inputs.append(f"{key} (current value: {value})")
                 elif not is_percent_var and (value < lower_bound or value > upper_bound):
                     out_of_bounds_inputs.append(f"{key} (current value: {value})")
-
-        if empty_inputs:
-            st.error("Please fill in all inputs before proceeding")
+        non_sensitivity_empty_inputs = [input_key for input_key in empty_inputs if input_key not in 'sensitivity_results']
+        if non_sensitivity_empty_inputs:
+            # Only throw an error if there are empty inputs that aren't sensitivity parameters
+            if non_sensitivity_empty_inputs:
+                st.error("Please fill in all required inputs before proceeding")
         elif out_of_bounds_inputs:
             st.error(f"The following inputs are outside their allowed bounds: {', '.join(out_of_bounds_inputs)}")
         else:
@@ -492,16 +507,39 @@ with tab2:
             st.session_state.results_df = results_df
             st.session_state.state_snapshots = state_snapshots
             st.session_state.calculations_done = True
+            
+            # Initialize sensitivity results but don't run analysis yet
+            st.session_state.sensitivity_results = {}
+            
+            # Get the base 10-year benefit-to-cost ratio for later use
+            investment_year = st.session_state.investment_year
+            target_year = investment_year + 10
+            year_data = results_df[results_df['Year'] == target_year]
+            if not year_data.empty:
+                st.session_state.base_bcr = year_data.iloc[0]['Benefit_to_Cost_Ratio']
+            else:
+                st.session_state.base_bcr = None
 
             script_placeholder = st.empty()
             components.html(f"<script>{switch_tab(2)}</script>", height=0)
             time.sleep(0.2)
             script_placeholder.empty()
-
 with tab3:
     if not st.session_state.get('calculations_done', False):
         st.warning('Please click "Submit" on Input Parameters tab')
     else:
+        # Get benefit-to-cost ratio for 10 years after investment year
+        ten_year_ratio = None
+        investment_year = st.session_state.investment_year
+        target_year = investment_year + 10
+        
+        year_data = st.session_state.results_df[st.session_state.results_df['Year'] == target_year]
+        if not year_data.empty:
+            ten_year_ratio = year_data.iloc[0]['Benefit_to_Cost_Ratio']
+            
+        if ten_year_ratio:
+            st.info(f"1 {st.session_state.currency} of sanitation investment will yield {ten_year_ratio:.1f} {st.session_state.currency} of return in 10 years")
+        
         st.subheader("Dashboard")
 
         # Add dropdown for value type selection
@@ -512,96 +550,23 @@ with tab3:
         )
         show_per_capita = value_type == "Per capita values"
         
-        # Create figure with secondary y-axis
-        if show_per_capita:
-            fig = px.line(st.session_state.results_df, x="Year", y=["Cumulative_Benefits_Per_Person", "Cumulative_Costs_Per_Person"])
-        else:
-            fig = px.line(st.session_state.results_df, x="Year", y=["Cumulative_Total_Benefit", "Cumulative_Total_Cost"])
-        
-        # Add benefit-to-cost ratio on secondary y-axis
-        fig.add_scatter(
-            x=st.session_state.results_df["Year"], 
-            y=st.session_state.results_df["Benefit_to_Cost_Ratio"],
-            name="Benefit-to-Cost Ratio",
-            yaxis="y2",
-            hovertemplate='%{y:,.1f}<extra></extra>'
-        )
-
-        # Find intersection year where benefits exceed costs
+        # create cost / benefit / ratio line chart
         df = st.session_state.results_df
-        benefits = df["Cumulative_Benefits_Per_Person"] if show_per_capita else df["Cumulative_Total_Benefit"]
-        costs = df["Cumulative_Costs_Per_Person"] if show_per_capita else df["Cumulative_Total_Cost"]
-            
-        # Find first year where benefits exceed costs
-        intersection_year = None
-        for i in range(len(df)):
-            if benefits.iloc[i] >= costs.iloc[i] and benefits.iloc[i] > 0 and costs.iloc[i] > 0:
-                intersection_year = df["Year"].iloc[i]
-                break
-                
-        if intersection_year:
-            # Add vertical line at intersection and ROI annotation
-            fig.add_shape(
-                type="line", x0=intersection_year, x1=intersection_year,
-                y0=0, y1=1, yref="paper", line=dict(color="black")
-            )
-            
-            fig.add_annotation(
-                x=intersection_year + 4, y=0.8, yref="paper",
-                text=f"{intersection_year - st.session_state.investment_year}-year ROI",
-                showarrow=False, font=dict(color='black', size=16)
-            )
-
-        # Update layout
-        fig.update_layout(
-            title=dict(text="Return on WASH Investment", font=dict(size=24)),
-            xaxis_title=dict(text="Year", font=dict(size=18)),
-            yaxis_title=dict(
-                text=f"{st.session_state.currency}/person" if show_per_capita else st.session_state.currency,
-                font=dict(size=18)
-            ),
-            yaxis2=dict(
-                title=dict(text="Benefit-to-Cost Ratio", font=dict(size=18)),
-                overlaying="y", side="right", showgrid=False, tickfont=dict(size=14)
-            ),
-            yaxis=dict(showgrid=True, gridcolor='lightgrey', tickfont=dict(size=14)),
-            xaxis=dict(dtick=10, showgrid=False, tickfont=dict(size=14)),
-            showlegend=False,
-            hovermode='x unified',
-            hoverlabel=dict(font_size=14)
-        )
-
-        # Update line styles
-        fig.data[0].update(line_color='green', name='Cumulative Benefits', mode='lines', hovertemplate='Cumulative: %{y:,.0f}<extra></extra>')
-        fig.data[1].update(line_color='grey', name='Cumulative Costs', mode='lines', hovertemplate='Cumulative: %{y:,.0f}<extra></extra>')
-        fig.data[2].update(line_color='blue', mode='lines', line=dict(width=5), yaxis='y2')
-
-        # Add text labels at end of lines
-        last_x = df["Year"].iloc[-1]
-        for trace in fig.data:
-            last_y = trace.y[-1]
-            y_ref = 'y2' if trace.name == "Benefit-to-Cost Ratio" else 'y'
-            x_pos = last_x - 3 if trace.name == "Benefit-to-Cost Ratio" else last_x + 2
-            x_anchor = 'right' if trace.name == "Benefit-to-Cost Ratio" else 'left'
-                
-            fig.add_annotation(
-                x=x_pos, y=last_y, text=trace.name,
-                showarrow=False, font=dict(color=trace.line.color, size=16),
-                xanchor=x_anchor, yanchor='middle', yref=y_ref
-            )
+        fig = create_line_chart(df, show_per_capita, st.session_state.currency, investment_year)
         st.plotly_chart(fig)
         
         # Create pie charts of benefit and cost components
         if st.session_state.state_snapshots:
             # Get available years from snapshots
-            summary_years = [2035, 2040,2045, 2050, 2055, 2060]
+            summary_years = [2035, 2040, 2045, 2050, 2055, 2060]
             years = list(range(st.session_state.current_year, 2061))
             
             # Year selector
             selected_year = st.selectbox(
                 "Select year to view cost and benefit breakdown:",
                 summary_years,
-                index=len(summary_years)-1  # Default to latest year
+                index=len(summary_years)-1,  # Default to latest year
+                key="benefit_cost_year_selector"  # Add unique key to trigger rerun on change
             )
 
             # Get index corresponding to selected year
@@ -677,7 +642,6 @@ with tab4:
     if not st.session_state.get('calculations_done', False):
         st.warning('Please click "Submit" on Input Parameters tab')
     else:
-
         # Get benefit-to-cost ratio for 10 years after investment year
         ten_year_ratio = None
         investment_year = st.session_state.investment_year
@@ -703,8 +667,7 @@ with tab4:
             septage_to_fstp_percent = 100 - septage_to_stp_percent
             
             # Add explanatory notes
-            st.info(f"There is a {households_without_treatment:,.0f}-household ({households_without_treatment_percent:.1f}%) gap treatment capacity. {sewer_percent:.1f}% of this will be addressed by sewer lines and {st.session_state.gap_treatment_capacity:.2f}MLD additional STP capacity. {septic_percent:.1f}% of this will be addressed by septic systems, with {septage_to_stp_percent:.1f}% of septage taken to STP and {septage_to_fstp_percent:.1f}% taken to FSTP.")
-        
+            st.write(f"There is a {households_without_treatment:,.0f}-household ({households_without_treatment_percent:.1f}%) gap in sanitation access. {sewer_percent:.1f}% of this will be addressed by sewer lines and {st.session_state.gap_treatment_capacity:.2f}MLD additional STP capacity. {septic_percent:.1f}% of this will be addressed by septic systems, with {septage_to_stp_percent:.1f}% of septage taken to STP and {septage_to_fstp_percent:.1f}% taken to FSTP.")
         # Add dropdown for value type selection
         value_type_2 = st.selectbox(
             "Select value type",
@@ -729,8 +692,8 @@ with tab4:
                 if show_per_capita_2:
                     row = {
                         'Year': year,
-                        f'Per-capita Benefits ({st.session_state.currency})': year_data['Benefits_Per_Person'],
-                        f'Per-capita Costs ({st.session_state.currency})': year_data['Costs_Per_Person'],
+                        f'Per-capita Benefits ({st.session_state.currency})': year_data['Cumulative_Benefits_Per_Person'],
+                        f'Per-capita Costs ({st.session_state.currency})': year_data['Cumulative_Costs_Per_Person'],
                         'Ratio': year_data["Benefit_to_Cost_Ratio"]
                     }
                 else:
@@ -782,7 +745,7 @@ with tab4:
 
             def generate_breakdown_table(components, year, component_type, show_per_capita):
                 """Generate breakdown table for benefits or costs"""
-                st.subheader(f"{component_type} Breakdown for {year}")
+                st.subheader(f"Cumulative {component_type} Breakdown for {year}")
                 df = pd.DataFrame({
                     'Component': components.keys(),
                     'Value': components.values()
@@ -840,16 +803,174 @@ with tab4:
         else:
             st.warning("No data available for summary years")
 
-    # Add "Next" button to go to Input Parameters tabs
-    if st.button("Next: Methodology"):
+    # Add "Next" button to go to Sensitivity tab
+    if st.button("Next: Sensitivity"):
         script_placeholder = st.empty()
         components.html(f"<script>{switch_tab(4)}</script>", height=0)
         script_placeholder.empty()
 
 with tab5:
-    st.markdown(methodology_content.text)
+    if not st.session_state.get('calculations_done', False):
+        st.warning('Please click "Submit" on Input Parameters tab')
+    else:
+        st.subheader("Sensitivity Analysis")
+        st.write("This analysis shows how the 10-year benefit-to-cost ratio changes when key parameters are increased or decreased by 20%.")
+        
+        # Run sensitivity analysis when user visits this tab
+        if st.button("Run Sensitivity Analysis"):
+            sensitivity_results = {}
+            base_bcr = st.session_state.base_bcr
+            
+            if base_bcr is not None:
+                # Run sensitivity analysis for each parameter
+                for param in sensitivity_parameters:
+                    if param in st.session_state:
+                        # Save original value
+                        original_value = st.session_state[param]
+                        
+                        # Ensure current_year is properly set
+                        if 'current_year' not in st.session_state and 'investment_year' in st.session_state:
+                            st.session_state['current_year'] = st.session_state['investment_year']
+                        
+                        # Test with 20% decrease
+                        st.session_state[param] = original_value * 0.8
+                        decrease_results, _ = run_calculations(st.session_state)
+                        investment_year = st.session_state.investment_year
+                        target_year = investment_year + 10
+                        decrease_data = decrease_results[decrease_results['Year'] == target_year]
+                        decrease_bcr = decrease_data.iloc[0]['Benefit_to_Cost_Ratio'] if not decrease_data.empty else None
+                        
+                        # Test with 20% increase
+                        st.session_state[param] = original_value * 1.2
+                        increase_results, _ = run_calculations(st.session_state)
+                        increase_data = increase_results[increase_results['Year'] == target_year]
+                        increase_bcr = increase_data.iloc[0]['Benefit_to_Cost_Ratio'] if not increase_data.empty else None
+                        
+                        # Restore original value
+                        st.session_state[param] = original_value
+                        
+                        # Calculate percent changes
+                        if decrease_bcr is not None and increase_bcr is not None:
+                            decrease_change = (decrease_bcr - base_bcr) / base_bcr * 100
+                            increase_change = (increase_bcr - base_bcr) / base_bcr * 100
+                            sensitivity_results[param] = {
+                                'decrease': decrease_change,
+                                'increase': increase_change
+                            }
+            
+            # Update session state with results
+            st.session_state.sensitivity_results = sensitivity_results
+            st.rerun()
+            
+        if 'sensitivity_results' in st.session_state and st.session_state.sensitivity_results:
+            # Create data for tornado chart
+            parameters = []
+            decrease_values = []
+            increase_values = []
+            
+            # Sort parameters by absolute impact (average of increase and decrease)
+            sorted_params = sorted(
+                st.session_state.sensitivity_results.items(),
+                key=lambda x: abs(x[1]['decrease']) + abs(x[1]['increase']),
+                reverse=True
+            )
+            
+            for param, values in sorted_params:
+                # Make parameter name more readable
+                readable_param = param.replace('_', ' ').title()
+                parameters.append(readable_param)
+                decrease_values.append(values['decrease'])
+                increase_values.append(values['increase'])
+            
+            # Create tornado chart
+            fig = go.Figure()
+            
+            # Add bars for decrease
+            fig.add_trace(go.Bar(
+                y=parameters,
+                x=decrease_values,
+                name='20% Decrease',
+                orientation='h',
+                marker=dict(color='red'),
+                hovertemplate='%{y}: %{x:.1f}% change<extra></extra>'
+            ))
+            
+            # Add bars for increase
+            fig.add_trace(go.Bar(
+                y=parameters,
+                x=increase_values,
+                name='20% Increase',
+                orientation='h',
+                marker=dict(color='green'),
+                hovertemplate='%{y}: %{x:.1f}% change<extra></extra>'
+            ))
+            
+            # Update layout
+            fig.update_layout(
+                title='Impact on 10-Year Benefit-to-Cost Ratio',
+                xaxis=dict(
+                    title='Percent Change in Benefit-to-Cost Ratio',
+                    zeroline=True,
+                    zerolinewidth=2,
+                    zerolinecolor='black'
+                ),
+                yaxis=dict(
+                    title='Parameter',
+                    autorange="reversed"  # To have the largest impact at the top
+                ),
+                barmode='relative',
+                bargap=0.1,
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                ),
+                height=500 + len(parameters) * 25  # Adjust height based on number of parameters
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Add explanation
+            st.write("""
+            ### How to interpret this chart:
+            - The chart shows how the 10-year benefit-to-cost ratio changes when each parameter is increased or decreased by 20%.
+            - Parameters are sorted by their overall impact (largest impact at the top).
+            - Red bars show the effect of decreasing the parameter by 20%.
+            - Green bars show the effect of increasing the parameter by 20%.
+            - Longer bars indicate parameters that have a greater influence on the results.
+            """)
+            
+            # Add table with numerical values
+            st.subheader("Numerical Values")
+            
+            sensitivity_data = []
+            for param, values in sorted_params:
+                readable_param = param.replace('_', ' ').title()
+                sensitivity_data.append({
+                    'Parameter': readable_param,
+                    '20% Decrease': f"{values['decrease']:.1f}%",
+                    '20% Increase': f"{values['increase']:.1f}%"
+                })
+            
+            sensitivity_df = pd.DataFrame(sensitivity_data)
+            st.table(sensitivity_df)
+        elif 'sensitivity_results' in st.session_state:
+            st.warning("No sensitivity results available. Please run the sensitivity analysis.")
+        else:
+            st.info("Click 'Run Sensitivity Analysis' to see how changes in parameters affect the results.")
+    
+    # Add "Next" button to go to Methodology tab
+    if st.button("Next: Methodology"):
+        script_placeholder = st.empty()
+        components.html(f"<script>{switch_tab(5)}</script>", height=0)
+        script_placeholder.empty()
+
 with tab6:
+    st.markdown(methodology_content.text)
+with tab7:
     st.write("#### Sanitation Variables Glossary")
     components.html(doc_content, height=1200, scrolling=True)
-with tab7:
+with tab8:
     st.write("For support with the SanOpps application, please contact the World Toilet Organization at https://worldtoilet.org")

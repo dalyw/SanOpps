@@ -1,7 +1,7 @@
 label,unit,key,type,category,value_type,percent_option,lower_bound,upper_bound,definition
 Construction Time for Large Infrastructure,Years,construction_time_large,optional_input,Demographic and Growth Information,int,,0,,The expected duration required to complete construction of planned sanitation infrastructure
 Construction Time for Small Infrastructure,Years,construction_time_small,optional_input,Demographic and Growth Information,int,,0,,The expected duration required to complete construction of planned sanitation infrastructure
-Currency, ,currency,user_input,Demographic and Growth Information,str,,,,The monetary unit used for all financial calculations
+Currency, ,currency,user_input,Economic Information,str,,,,The monetary unit used for all financial calculations
 Current Year, ,current_year,user_input,Demographic and Growth Information,int,,,,The current year for which data is being entered
 Investment Year, ,investment_year,user_input,Demographic and Growth Information,int,,current_year,,The year in which investments in sanitation infrastructure are planned to begin
 Urban Population,People,urban_pop,user_input,Demographic and Growth Information,int,,0,1000000000,The total count of people living in urban areas within a city
@@ -24,8 +24,8 @@ Number of WC per CT block,Count,wc_per_ct,optional_input,Toilets,int,,0,,
 FHTC Construction Cost,currency/household,fhtc_cost,optional_input,Drinking Water,float,,0,,The cost per household for installing a functional household tap connection
 Households with Tap Water,%,urban_households_with_fhtp_percent,user_input,Drinking Water,float,urban_households,0,households,The percentage of urban households that have access to tap water connections
 Water Consumption Per Capita,LPCD,water_consumption,optional_input,Drinking Water,float,,0,,The average daily water consumption per person in liters
-Is Co Treatment available at the Existing STP?,,co_treat_avail,user_input,Decentralized Treatment,str,,,,Whether co-treatment of septage is available at the STP
-Is the Town proposing Co Treatment at STP?,,co_treat_proposed,user_input,Decentralized Treatment,str,,,,Whether co-treatment of septage is being proposed for at the STP
+Is Co Treatment available at the Existing STP?, ,co_treat_avail,user_input,Decentralized Treatment,str,,,,Whether co-treatment of septage is available at the STP
+Is the Town proposing Co Treatment at STP?, ,co_treat_proposed,user_input,Decentralized Treatment,str,,,,Whether co-treatment of septage is being proposed for at the STP
 Cost of Co-Treatment Facility at STP,currency/KL,cost_co_treatment,optional_input,Decentralized Treatment,float,,0,,The cost per kiloliter for co-treatment facilities at STP
 FSTPs Available?, ,fstp_avail,user_input,Decentralized Treatment,str,,,,Whether Fecal Sludge Treatment Plants are available
 FSTP Design Capacity,KLD,fstp_capacity,user_input,Decentralized Treatment,float,,0,,The maximum volume of fecal sludge that can be treated per day
@@ -49,10 +49,10 @@ Cost of Medical Treatment for Diahhreal Illness,currency/Instance,treatment_cost
 Public Awareness Cost,currency/Person,awareness_cost,optional_input,Training and Outreach,float,,0,,The cost per person for public awareness campaigns
 Community Training Cost,currency/Person,training_cost,optional_input,Training and Outreach,float,,0,,The cost per person for community sanitation training
 Discount Rate,%,discount_rate,optional_input,Advanced Inputs,float,,,,
-Time saved from water collection (adjusted by FHTC proportion),HR/Household-Day,water_access_saved,optional_input,Advanced Inputs,float,,0,,
+Time saved from water collection,HR/Household-Day,water_access_saved,optional_input,Advanced Inputs,float,,0,,
 Desludging Frequency,Years,desludging_freq,optional_input,Advanced Inputs,float,,0,30,How often septic tanks need to be emptied
 ULB officials to be trained within Population,%,percent_ulb_officials_trained,optional_input,Advanced Inputs,float,,,,
-Time saved from sanitation access (adjusted by CT proportion),HR/Person-Day,sanitation_access_saved,optional_input,Advanced Inputs,float,,0,,
+Time saved from sanitation access,HR/Person-Day,sanitation_access_saved,optional_input,Advanced Inputs,float,,0,,
 Septage emptied in household desludging,KL,septage_emptied_per_household,optional_input,Advanced Inputs,float,,0,,
 Additional Sewer Length Needed Per Person,m/person,sewer_length_per_person,optional_input,Advanced Inputs,float,,0,,
 Percent Decrease in Disease Incidence due to WASH,%,disease_decrease_percent,optional_input,Advanced Inputs,float,,0,,
