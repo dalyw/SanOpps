@@ -22,6 +22,7 @@ def switch_tab(tab):
     tab[{tab}].click()
     """
 
+# Plotting functions developed with support from Claude 3.7
 def create_line_chart(df, show_per_capita, currency, investment_year):
     """
     Create a line chart showing cumulative benefits, costs, and benefit-to-cost ratio.
