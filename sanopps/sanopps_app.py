@@ -582,7 +582,6 @@ with tab3:
                         benefit_colors
                     )
                     st.plotly_chart(fig_benefits)
-
                     # If showing per capita values, convert the components to per capita
                     if show_per_capita and 'urban_pop' in st.session_state:
                         per_capita_benefits = {k: v / st.session_state.urban_pop for k, v in selected_benefits.items()}
@@ -618,11 +617,20 @@ with tab3:
                     )
                     st.plotly_chart(fig_costs)
 
-                    fig_costs_bar = create_bar_chart(
-                        selected_costs,
-                        "Cumulative Contribution to Costs",
-                        'grey'
-                    )
+                    # If showing per capita values, convert the components to per capita
+                    if show_per_capita and 'urban_pop' in st.session_state:
+                        per_capita_costs = {k: v / st.session_state.urban_pop for k, v in selected_costs.items()}
+                        fig_costs_bar = create_bar_chart(
+                            per_capita_costs,
+                            "Cumulative Contribution to Costs (Per Person)",
+                            'grey'
+                        )
+                    else:
+                        fig_costs_bar = create_bar_chart(
+                            selected_costs,
+                            "Cumulative Contribution to Costs",
+                            'grey'
+                        )
                     st.plotly_chart(fig_costs_bar)
 
     # Add "Next" button to go to Input Parameters tabs
