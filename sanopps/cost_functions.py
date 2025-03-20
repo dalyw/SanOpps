@@ -112,14 +112,18 @@ def add_annual_benefits(i, arrays, st_state, years_since_investment):
     sanitation_time_saved = recycled_water = tourism = 0
     hourly_income = st_state.hourly_monetary_income
     
+    working_age_factor = 0.6
+    nonworking_age_factor = 0.15
+    working_hours_per_day = 8
+
     if years_since_investment >= st_state.construction_time_small:
         # Health-related benefits
         decreased_incidences = st_state.disease_incidence * st_state.disease_decrease_percent / 100
         working_age_ratio = st_state.working_age_pop_percent / 100
         reduced_healthcare_costs = decreased_incidences * st_state.cost_per_visit
         reduced_healthcare_commute_costs  = decreased_incidences * st_state.commute_cost_doctor
-        productivity_benefits_working = hourly_income * working_age_ratio * st_state.days_per_incidence * 8 * 0.6 * decreased_incidences
-        productivity_benefits_nonworking = hourly_income * (1 - working_age_ratio) * st_state.days_per_incidence * 8 * 0.15 * decreased_incidences
+        productivity_benefits_working = hourly_income * working_age_ratio * st_state.days_per_incidence * working_hours_per_day * working_age_factor * decreased_incidences
+        productivity_benefits_nonworking = hourly_income * (1 - working_age_ratio) * st_state.days_per_incidence * working_hours_per_day * nonworking_age_factor * decreased_incidences
 
         # Recycled water benefits
         new_sewer_connections = max(st_state.final_pop_connected_sewer_percent - 
@@ -128,14 +132,14 @@ def add_annual_benefits(i, arrays, st_state, years_since_investment):
         
         # Water time saved
         prop_new_fhtc = max(100 - st_state.urban_households_with_fhtp_percent, 0) / 100
-        time_saved_water_working = hourly_income * working_age_ratio * 0.6 * st_state.water_access_saved * arrays['urban_households'][i] * prop_new_fhtc
-        time_saved_water_nonworking = hourly_income * (1 - working_age_ratio) * 0.15 * st_state.water_access_saved * arrays['urban_households'][i] * prop_new_fhtc
+        time_saved_water_working = hourly_income * working_age_ratio * working_age_factor * st_state.water_access_saved * arrays['urban_households'][i] * prop_new_fhtc
+        time_saved_water_nonworking = hourly_income * (1 - working_age_ratio) * nonworking_age_factor * st_state.water_access_saved * arrays['urban_households'][i] * prop_new_fhtc
         water_collection_time_saved = time_saved_water_working + time_saved_water_nonworking
 
         # Sanitation time saved
         affected_pop = (st_state.slum_pop_percent + st_state.floating_pop_percent) / 100
-        time_saved_sanitation_working = hourly_income * working_age_ratio * 0.6 * st_state.sanitation_access_saved * affected_pop
-        time_saved_sanitation_nonworking = hourly_income * (1 - working_age_ratio) * 0.15 * st_state.sanitation_access_saved * affected_pop
+        time_saved_sanitation_working = hourly_income * working_age_ratio * working_age_factor * st_state.sanitation_access_saved * affected_pop
+        time_saved_sanitation_nonworking = hourly_income * (1 - working_age_ratio) * nonworking_age_factor * st_state.sanitation_access_saved * affected_pop
         sanitation_time_saved = time_saved_sanitation_working + time_saved_sanitation_nonworking
 
         # Tourism Benefits
@@ -185,10 +189,11 @@ def run_calculations(st_state):
     
     # Calculate derived values in session state
     st_state.hourly_monetary_income = st_state.gdp_per_capita/(8*5*52)
+
     st_state.slum_pop_percent_in_investment_year = max(
         st_state.slum_pop_percent-st_state.slum_pop_percent_decrease,
         0)
-    # st_state.household_size = st_state.urban_pop / st_state.urban_households
+
     st_state.sewer_fraction = st_state.sewer_vs_fstp_percent / 100
     st_state.fstp_fraction = 1 - st_state.sewer_fraction
     
