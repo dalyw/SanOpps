@@ -143,7 +143,9 @@ def add_annual_benefits(i, arrays, st_state, years_since_investment):
         sanitation_time_saved = time_saved_sanitation_working + time_saved_sanitation_nonworking
 
         # Tourism Benefits
-        tourism = (st_state.tourism_contribution_percent / 100 * st_state.increase_gdp_tourism_percent / 100 * st_state.gdp_per_capita * arrays['urban_pop'][i])
+        # Adjust GDP per capita for inflation over time
+        inflation_adjusted_gdp = st_state.gdp_per_capita * (1 + st_state.inflation_rate/100) ** years_since_investment
+        tourism = (st_state.tourism_contribution_percent / 100 * st_state.increase_gdp_tourism_percent / 100 * inflation_adjusted_gdp * arrays['urban_pop'][i])
 
     return {
         'Healthcare Treatment Cost Savings': reduced_healthcare_costs,

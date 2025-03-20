@@ -129,7 +129,6 @@ def create_pie_chart(components, title, colors):
     """Create pie chart with main components of cost / benefit """
     filtered_components = {k: v for k, v in components.items() if k != 'Total'}
     total = components['Total']
-    print(filtered_components)
     formatted_components = {}
     for k, v in filtered_components.items():
         if len(k) > 20:  # add line breaks to longer components
