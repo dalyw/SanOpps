@@ -288,6 +288,21 @@ def generate_inputs(variables, category, input_type):
                                     st.session_state[monetary_key] *= conversion_factor
                     
                     st.session_state.prev_currency = selected
+            elif key == 'climate':
+                options = ["Wet", "Dry"]
+                current_value = st.session_state[key]
+                if current_value not in options:
+                    current_value = options[0]
+                    st.session_state[key] = current_value
+                
+                selected = st.selectbox(
+                    f"select_{key}",
+                    options,
+                    key=f"select_{key}",
+                    index=options.index(current_value),
+                    **input_kwargs
+                )
+                st.session_state[key] = selected
             elif row['value_type'] == 'slider':
                 try:
                     current_value = float(st.session_state[key])

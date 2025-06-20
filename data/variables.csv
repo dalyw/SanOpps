@@ -58,5 +58,7 @@ Additional Sewer Length Needed Per Person,m/person,sewer_length_per_person,optio
 Percent Decrease in Disease Incidence due to WASH,%,disease_decrease_percent,optional_input,Advanced Inputs,float,,0,,
 Days off Work Per Disease Incidence,Count,days_per_incidence,optional_input,Advanced Inputs,float,,0,,
 Percentage increase in GDP due to Tourism Following WASH Investment,%,increase_gdp_tourism_percent,optional_input,Advanced Inputs,float,,0,,
+Climate, ,climate,user_input,Environmental,str,,,,Wet or Dry climate
+Cost of Carbon,currency/ton CO2e,cost_of_carbon,optional_input,Environmental,float,,0,1000,Price of carbon credits per ton of CO2 equivalent
 Amortize Capex over 20 years?, ,amortize_capex,optional_input,Economic Information,str,,,,Whether to calculate capex as lump-sum or distirbuted over 20 years
 Interest Rate for Capex Amortization, ,interest_rate,optional_input,Economic Information,float,,0,,Interest rate per year if capex is paid off year-by-year

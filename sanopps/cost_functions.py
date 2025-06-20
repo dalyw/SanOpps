@@ -106,10 +106,104 @@ def add_annual_operating_cost(i, arrays, st_state, years_since_investment, treat
         'Fecal Sludge Treatment Plant': fstp_maintenance
     }
 
+def calculate_ghg_emissions(population, sanitation_mix, st_state):
+    """Calculate annual GHG emissions in tons of CO2 equivalent."""
+    
+    # Constants
+    BOD_PER_PERSON_PER_DAY = 0.04  # kg BOD/person/day for Southeast Asia (0.4 in prompt seems high, using IWA guidance)
+    N_PER_PERSON_PER_YEAR = 4.38 # kg N/person/year (based on 12g/day)
+    GWP_CH4 = 28  # Global Warming Potential of Methane
+    GWP_N2O = 265 # Global Warming Potential of Nitrous Oxide
+
+    # Emission factors (using default values from the prompt)
+    ch4_ef = {
+        'open_defecation': 0,
+        'pit_latrine_dry': 0.06,  # kg CH4 / kg BOD
+        'pit_latrine_wet': 0.42,
+        'soak_pit': 0.30, # Assumed same as Septic tank
+        'septic_tank': 0.30,
+        'septic_tank_land_dispersal': 0.30,
+        'sewer': 0.00 # Assuming centralized treatment removes methane potential
+    }
+
+    n2o_ef_treatment = {
+        'open_defecation': 0,
+        'pit_latrine_dry': 0, # kg N2O-N / kg N
+        'pit_latrine_wet': 0,
+        'soak_pit': 0, # Assumed same as Septic tank
+        'septic_tank': 0,
+        'septic_tank_land_dispersal': 0.0045,
+        'sewer': 0.0045 # Assuming nitrification/denitrification at plant
+    }
+    
+    n_removed_fraction = {
+        'open_defecation': 0,
+        'pit_latrine_dry': 0.12, # Fraction
+        'pit_latrine_wet': 0.12,
+        'soak_pit': 0.15, # Assumed same as Septic tank
+        'septic_tank': 0.15,
+        'septic_tank_land_dispersal': 0.68,
+        'sewer': 0.68 # Assuming advanced treatment
+    }
+    
+    n2o_ef_discharge = { # for nitrogen not removed during treatment
+        'soil': 0.006, # kg N2O-N / kg N
+        'aquatic': 0.005
+    }
+    
+    total_ch4_emissions_kg = 0
+    total_n2o_emissions_kg = 0
+    
+    # Select pit latrine type based on climate
+    pit_latrine_type = 'pit_latrine_wet' if st_state.climate == 'Wet' else 'pit_latrine_dry'
+
+    for system, percentage in sanitation_mix.items():
+        pop = population * (percentage / 100)
+        if pop == 0:
+            continue
+
+        # Use appropriate key for climate-dependent systems
+        current_system = system
+        if system == 'pit_latrine':
+            current_system = pit_latrine_type
+
+        # Methane calculations
+        tow = BOD_PER_PERSON_PER_DAY * 365 * pop  # Total organics in wastewater (kg BOD/yr)
+        ch4_kg = tow * ch4_ef[current_system]
+        total_ch4_emissions_kg += ch4_kg
+        
+        # Nitrous Oxide calculations
+        total_n_input_kg = N_PER_PERSON_PER_YEAR * pop # kg N/yr
+        
+        # Direct emissions from treatment
+        n2o_from_treatment_kg_N = total_n_input_kg * n2o_ef_treatment[current_system]
+        
+        # Indirect emissions from effluent discharge
+        n_removed = total_n_input_kg * n_removed_fraction[current_system]
+        n_discharged = total_n_input_kg - n_removed
+        
+        # Determine discharge pathway and EF
+        if current_system in ['septic_tank_land_dispersal', 'soak_pit', 'pit_latrine_dry', 'pit_latrine_wet']:
+            # Assume discharge to soil
+            discharge_ef = n2o_ef_discharge['soil']
+        else: # open defecation, septic tank (no dispersal), sewer (to water body)
+            discharge_ef = n2o_ef_discharge['aquatic']
+            
+        n2o_from_discharge_kg_N = n_discharged * discharge_ef
+        
+        # Total N2O in kg of N2O-N, needs conversion to kg N2O
+        total_n2o_kg_N = n2o_from_treatment_kg_N + n2o_from_discharge_kg_N
+        total_n2o_emissions_kg += total_n2o_kg_N * (44/28) # Convert N2O-N to N2O
+        
+    # Convert all to tons of CO2e
+    total_co2e_tons = (total_ch4_emissions_kg * GWP_CH4 + total_n2o_emissions_kg * GWP_N2O) / 1000
+    
+    return total_co2e_tons
+
 def add_annual_benefits(i, arrays, st_state, years_since_investment):
     """Calculate annual benefits based on construction completion"""    
     reduced_healthcare_costs = reduced_healthcare_commute_costs = productivity_benefits_working = productivity_benefits_nonworking = water_collection_time_saved = 0
-    sanitation_time_saved = recycled_water = tourism = 0
+    sanitation_time_saved = recycled_water = tourism = value_of_carbon_credits = 0
     hourly_income = st_state.hourly_monetary_income * (1 + st_state.inflation/100) ** years_since_investment
     
     working_age_factor = 0.6
@@ -147,6 +241,31 @@ def add_annual_benefits(i, arrays, st_state, years_since_investment):
         inflation_adjusted_gdp = st_state.gdp_per_capita * (1 + st_state.inflation/100) ** years_since_investment
         tourism = (st_state.tourism_contribution_percent / 100 * st_state.increase_gdp_tourism_percent / 100 * inflation_adjusted_gdp * arrays['urban_pop'][i])
 
+        # Carbon Credit Benefits
+        if st_state.cost_of_carbon > 0:
+            population_served = arrays['urban_pop'][i] * (1 - st_state.urban_pop_with_sewer_in_investment_year_percent / 100)
+            
+            # Define sanitation mixes
+            baseline_mix = {
+                'open_defecation': 10,
+                'pit_latrine': 20,
+                'soak_pit': 70
+            }
+            
+            new_system_mix = {
+                'sewer': st_state.sewer_fraction * 100,
+                'septic_tank_land_dispersal': st_state.fstp_fraction * 100
+            }
+
+            # Calculate emissions
+            baseline_emissions_co2e = calculate_ghg_emissions(population_served, baseline_mix, st_state)
+            new_system_emissions_co2e = calculate_ghg_emissions(population_served, new_system_mix, st_state)
+            
+            # Avoided emissions
+            avoided_emissions_co2e = baseline_emissions_co2e - new_system_emissions_co2e
+            
+            value_of_carbon_credits = avoided_emissions_co2e * st_state.cost_of_carbon
+
     return {
         'Healthcare Treatment Cost Savings': reduced_healthcare_costs,
         'Healthcare Commute Cost Savings': reduced_healthcare_commute_costs,
@@ -155,7 +274,8 @@ def add_annual_benefits(i, arrays, st_state, years_since_investment):
         'Water Collection Time Saved': water_collection_time_saved,
         'Access to Sanitation Time Saved': sanitation_time_saved,
         'Value of Recycled Water': recycled_water,
-        'Tourism': tourism
+        'Tourism': tourism,
+        'Value of Carbon Credits': value_of_carbon_credits
     }
 
 def run_calculations(st_state):
@@ -221,7 +341,7 @@ def run_calculations(st_state):
                 'Sewage Treatment (CapEx + OpEx)', 'Fecal Sludge Treatment Plant', 'Training Officials', 'Public Awareness']
     benefit_keys = ['Healthcare Treatment Cost Savings', 'Healthcare Commute Cost Savings', 'Productive Time Saved - Working Age', 
                    'Productive Time Saved - Nonworking Age', 'Water Collection Time Saved', 
-                   'Access to Sanitation Time Saved', 'Value of Recycled Water', 'Tourism']
+                   'Access to Sanitation Time Saved', 'Value of Recycled Water', 'Tourism', 'Value of Carbon Credits']
     
     cost_components = dict.fromkeys(cost_keys, 0)
     benefit_components = dict.fromkeys(benefit_keys, 0)
