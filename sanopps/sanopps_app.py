@@ -961,7 +961,7 @@ with tab5:
                 x=decrease_values,
                 name='20% Decrease',
                 orientation='h',
-                marker=dict(color='red'),
+                marker=dict(color='#0072B2'),
                 hovertemplate='%{y}: %{x:.1f}% change<extra></extra>'
             ))
             
@@ -971,7 +971,7 @@ with tab5:
                 x=increase_values,
                 name='20% Increase',
                 orientation='h',
-                marker=dict(color='green'),
+                marker=dict(color='#E69F00'),
                 hovertemplate='%{y}: %{x:.1f}% change<extra></extra>'
             ))
             
@@ -1011,8 +1011,8 @@ with tab5:
             ### How to interpret this chart:
             - The chart shows how the 10-year benefit-to-cost ratio changes when each parameter is increased or decreased by 20%.
             - Parameters are sorted by their overall impact (largest impact at the top).
-            - Red bars (left of center) show the effect of decreasing the parameter by 20%.
-            - Green bars (right of center) show the effect of increasing the parameter by 20%.
+            - Blue bars (left of center) show the effect of decreasing the parameter by 20%.
+            - Orange bars (right of center) show the effect of increasing the parameter by 20%.
             - Longer bars indicate parameters that have a greater influence on the results.
             """)
             
